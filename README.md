@@ -44,6 +44,10 @@
   -> 输出 .srt 文件
 ```
 
+## 界面预览
+
+![AI 大模型字幕助手主界面](screenshots/ScreenShot_2026-04-30_204003_672.png)
+
 ## 快速开始
 
 Windows 10/11 是主要支持环境。Linux 和 macOS 可自行验证。
