@@ -108,3 +108,4 @@ screenshots/
 
 # Keep project-managed text dependency files
 !requirements.txt
+!requirements-dev.txt

@@ -284,6 +284,12 @@ docs/              工程治理、发布检查和维护文档
 
 ## 开发与验证
 
+安装开发、测试和打包依赖：
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+```
+
 常用检查：
 
 ```powershell
@@ -295,6 +301,32 @@ docs/              工程治理、发布检查和维护文档
 .\.venv\Scripts\python.exe -m aisrt.gui --check
 git diff --check
 ```
+
+## 发布构建
+
+Windows portable 包是轻量源码包，不包含 Python、PyTorch/CUDA 运行库、模型权重、FFmpeg、`.venv`、缓存、媒体、字幕、截图或日志。目标产物为：
+
+```text
+dist/release/AiSRT-v0.1.0-windows-portable.zip
+dist/release/aisrt-0.1.0-py3-none-any.whl
+dist/release/SHA256SUMS.txt
+```
+
+构建命令：
+
+```powershell
+.\scripts\build_portable.ps1 -InstallDeps
+```
+
+约束：
+
+- Portable ZIP 不包含模型权重、模型缓存、测试媒体、截图、日志或生成字幕。
+- Portable ZIP 不包含 Python 解释器、PyTorch/CUDA DLL 或其他本地运行环境。
+- 解压后运行 `install_runtime.bat`，脚本会在当前目录创建 `.venv` 并安装 Python 依赖。
+- 使用远程模型 ID 时，模型权重会在首次运行时下载到 Hugging Face 缓存目录。
+- FFmpeg 和 ffprobe 需要用户单独安装，并确保可在 `PATH` 中直接运行。
+- Release asset 上传前应保留 ZIP、wheel 和 `SHA256SUMS.txt` 三个文件。
+- `packaging/aisrt_portable.spec` 仅保留给维护者本地试验完整运行时打包，默认 Release 不使用它。
 
 ## 文档导航
 

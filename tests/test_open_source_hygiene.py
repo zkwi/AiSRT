@@ -12,6 +12,8 @@ IGNORED_DIRS = {
     ".pytest_cache",
     ".venv",
     "aisrt.egg-info",
+    "build",
+    "dist",
     "models",
     "screenshots",
     "video",
@@ -56,7 +58,10 @@ REQUIRED_GITIGNORE_PATTERNS = {
     "*.orig",
     "*.rej",
     "*.egg-info/",
+    "build/",
+    "dist/",
     "!requirements.txt",
+    "!requirements-dev.txt",
     "!.env.example",
 }
 REQUIRED_PROJECT_FILES = {

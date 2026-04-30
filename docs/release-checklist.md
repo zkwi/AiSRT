@@ -10,7 +10,7 @@
 - [ ] `docs/README.md` 能正确引导到开发、发布和安全文档。
 - [ ] `LICENSE`、README 和 `pyproject.toml` 中的许可证描述一致。
 - [ ] `.gitignore` 覆盖模型、缓存、媒体、字幕、日志和本地环境。
-- [ ] 没有提交 `.env`、`.venv/`、`.hf_cache/`、`models/`、`video/`、`screenshots/`。
+- [ ] 没有提交 `.env`、`.venv/`、`.hf_cache/`、`models/`、`video/`、`screenshots/` 或 `dist/` 产物。
 
 ## 隐私与敏感信息
 
@@ -23,6 +23,7 @@
 ## 功能验证
 
 ```powershell
+python -m pip install -r requirements-dev.txt
 python -m pytest -q
 python -m compileall -q aisrt tests
 python -m pip check
@@ -39,6 +40,42 @@ GUI 相关改动额外确认：
 - [ ] 添加文件、拖拽文件、右键菜单、高级设置可用。
 - [ ] 普通日志和技术日志切换正常。
 - [ ] 高 DPI Windows 缩放下没有明显重叠或截断。
+
+## Windows portable 发布包
+
+构建命令：
+
+```powershell
+.\scripts\build_portable.ps1 -Version 0.1.0
+```
+
+产物应位于 `dist/release/`：
+
+- [ ] `AiSRT-v0.1.0-windows-portable.zip`
+- [ ] `aisrt-0.1.0-py3-none-any.whl`
+- [ ] `SHA256SUMS.txt`
+
+打包约束：
+
+- [ ] ZIP 中包含 `install_runtime.bat`、`start_gui.bat`、`open_shell.bat`、`README_PORTABLE.txt`、`README.md`、`LICENSE` 和 `CHANGELOG.md`。
+- [ ] ZIP 中不包含 Python 解释器、PyTorch/CUDA DLL、`.venv/`、模型权重、`.hf_cache/`、`models/`、测试媒体、截图、运行日志、生成字幕或本机绝对路径。
+- [ ] 模型权重依赖程序首次运行时按远程模型 ID 下载，不随 Release asset 分发。
+- [ ] Python 依赖由 `install_runtime.bat` 在用户本地 `.venv` 中安装，不随 Release asset 分发。
+- [ ] FFmpeg 和 ffprobe 不随当前 ZIP 分发，Release notes 需提醒用户手动安装并加入 `PATH`。
+- [ ] 解压 ZIP 后运行 `install_runtime.bat` 可完成依赖安装，随后 `start_gui.bat` 可启动 GUI。
+
+GitHub Release：
+
+```powershell
+git tag v0.1.0
+git push origin v0.1.0
+gh release create v0.1.0 `
+  dist/release/AiSRT-v0.1.0-windows-portable.zip `
+  dist/release/aisrt-0.1.0-py3-none-any.whl `
+  dist/release/SHA256SUMS.txt `
+  --title "AISRT v0.1.0" `
+  --notes-file dist/release/RELEASE_NOTES.md
+```
 
 ## 发布前备注
 
