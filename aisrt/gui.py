@@ -133,6 +133,7 @@ class MainWindow(QMainWindow):
         self.status_current_key = "status_add_files"
         self.status_current_values: dict[str, object] = {}
         self.last_progress_detail = ""
+        self.last_file_dialog_dir = Path.cwd()
         self.current_processing_row: int | None = None
         self.translation_prompt_copied = False
 
@@ -893,12 +894,18 @@ class MainWindow(QMainWindow):
             app.setStyleSheet(APP_QSS)
         self.setStyleSheet(APP_QSS)
 
+    def file_dialog_start_dir(self) -> Path:
+        if self.last_file_dialog_dir.exists():
+            return self.last_file_dialog_dir
+        self.last_file_dialog_dir = Path.cwd()
+        return self.last_file_dialog_dir
+
     def add_files(self) -> None:
         extensions = " ".join(f"*{suffix}" for suffix in sorted(MEDIA_EXTENSIONS))
         selected, _ = QFileDialog.getOpenFileNames(
             self,
             self.t("select_media_files"),
-            str(Path.cwd()),
+            str(self.file_dialog_start_dir()),
             self.t("media_files_filter", extensions=extensions),
         )
         if not selected:
@@ -919,6 +926,7 @@ class MainWindow(QMainWindow):
             )
             return
 
+        self.last_file_dialog_dir = media_paths[-1].parent
         known = {path.resolve() for path in self.files}
         added = 0
         for path in media_paths:

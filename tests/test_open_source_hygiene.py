@@ -40,6 +40,7 @@ OLD_PROJECT_NAMES = {
     "ai-subtitle-assistant",
 }
 REQUIRED_GITIGNORE_PATTERNS = {
+    ".cache/",
     ".env",
     ".venv/",
     ".hf_cache/",
@@ -51,11 +52,15 @@ REQUIRED_GITIGNORE_PATTERNS = {
     "*.raw.srt",
     "*.mp4",
     "*.log",
+    "*.bak",
+    "*.orig",
+    "*.rej",
     "*.egg-info/",
     "!requirements.txt",
     "!.env.example",
 }
 REQUIRED_PROJECT_FILES = {
+    "AGENTS.md",
     "README.md",
     "LICENSE",
     "CONTRIBUTING.md",

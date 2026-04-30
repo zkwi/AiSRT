@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import re
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -10,6 +11,7 @@ from PyQt6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QDialogButtonBox,
+    QFileDialog,
     QHeaderView,
     QLabel,
     QLineEdit,
@@ -443,6 +445,65 @@ def test_output_directory_setting_is_removed_and_uses_media_parent(tmp_path):
     assert window.options().out_dir is None
     assert window.table.horizontalHeaderItem(2).text() == "字幕目录"
     assert window.table.item(0, 2).text() == str(tmp_path)
+
+    window.close()
+
+
+def test_add_files_dialog_reuses_last_media_directory(tmp_path, monkeypatch):
+    window = MainWindow()
+    first_dir = tmp_path / "first"
+    second_dir = tmp_path / "second"
+    first_dir.mkdir()
+    second_dir.mkdir()
+    first_file = first_dir / "movie.mp4"
+    second_file = second_dir / "voice.mp3"
+    first_file.write_bytes(b"")
+    second_file.write_bytes(b"")
+
+    calls: list[str] = []
+    selections = [
+        ([str(first_file)], ""),
+        ([str(second_file)], ""),
+        ([], ""),
+    ]
+
+    def fake_get_open_file_names(parent, title, directory, file_filter):
+        calls.append(directory)
+        return selections.pop(0)
+
+    monkeypatch.setattr(QFileDialog, "getOpenFileNames", fake_get_open_file_names)
+
+    window.add_files()
+    assert calls[-1] == str(Path.cwd())
+    assert window.last_file_dialog_dir == first_dir.resolve()
+
+    window.add_files()
+    assert calls[-1] == str(first_dir.resolve())
+    assert window.last_file_dialog_dir == second_dir.resolve()
+
+    window.add_files()
+    assert calls[-1] == str(second_dir.resolve())
+    assert window.last_file_dialog_dir == second_dir.resolve()
+
+    window.close()
+
+
+def test_add_files_dialog_falls_back_when_last_directory_is_missing(tmp_path, monkeypatch):
+    window = MainWindow()
+    missing_dir = tmp_path / "missing"
+    window.last_file_dialog_dir = missing_dir
+    calls: list[str] = []
+
+    def fake_get_open_file_names(parent, title, directory, file_filter):
+        calls.append(directory)
+        return [], ""
+
+    monkeypatch.setattr(QFileDialog, "getOpenFileNames", fake_get_open_file_names)
+
+    window.add_files()
+
+    assert calls == [str(Path.cwd())]
+    assert window.last_file_dialog_dir == Path.cwd()
 
     window.close()
 

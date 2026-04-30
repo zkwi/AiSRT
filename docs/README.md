@@ -9,6 +9,7 @@
 
 ## 开发与维护
 
+- [代理维护指南](../AGENTS.md)：给代码代理和维护者看的项目约束、验证命令和协作规则。
 - [工程治理说明](engineering.md)：模块边界、GUI/CLI 约定、提交前检查。
 - [贡献指南](../CONTRIBUTING.md)：开发原则、提交前检查、Issue 与 PR 要求。
 - [开源发布检查清单](release-checklist.md)：发布前隐私、功能和仓库内容核对。
