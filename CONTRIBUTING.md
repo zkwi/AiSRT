@@ -8,8 +8,10 @@
 py -3.11 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -U pip
-python -m pip install -r requirements.txt
+python -m pip install -r requirements-dev.txt
 ```
+
+`requirements.txt` 用于普通运行环境；开发、测试和打包请使用 `requirements-dev.txt`。
 
 安装完成后先运行：
 

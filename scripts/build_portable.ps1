@@ -53,6 +53,22 @@ function Invoke-Native {
     }
 }
 
+function Get-RelativePathCompat {
+    param(
+        [string]$BasePath,
+        [string]$FullPath
+    )
+    $BaseFullPath = [System.IO.Path]::GetFullPath($BasePath)
+    if (-not $BaseFullPath.EndsWith([System.IO.Path]::DirectorySeparatorChar)) {
+        $BaseFullPath = $BaseFullPath + [System.IO.Path]::DirectorySeparatorChar
+    }
+    $TargetFullPath = [System.IO.Path]::GetFullPath($FullPath)
+    $BaseUri = [System.Uri]::new($BaseFullPath)
+    $TargetUri = [System.Uri]::new($TargetFullPath)
+    $RelativeUri = $BaseUri.MakeRelativeUri($TargetUri)
+    return [System.Uri]::UnescapeDataString($RelativeUri.ToString()).Replace("/", [System.IO.Path]::DirectorySeparatorChar)
+}
+
 function Copy-ProjectItem {
     param([string]$RelativePath)
     $Source = Join-Path $RepoRoot $RelativePath
@@ -60,11 +76,16 @@ function Copy-ProjectItem {
     if (-not (Test-Path -LiteralPath $Source)) {
         throw "Missing package source: $RelativePath"
     }
-    $Parent = Split-Path -Parent $Destination
-    if ($Parent) {
-        New-Item -ItemType Directory -Path $Parent -Force | Out-Null
+    $SourceItem = Get-Item -LiteralPath $Source
+    if ($SourceItem.PSIsContainer) {
+        Copy-Item -LiteralPath $Source -Destination $PackageDir -Recurse -Force
+    } else {
+        $Parent = Split-Path -Parent $Destination
+        if ($Parent) {
+            New-Item -ItemType Directory -Path $Parent -Force | Out-Null
+        }
+        Copy-Item -LiteralPath $Source -Destination $Destination -Force
     }
-    Copy-Item -LiteralPath $Source -Destination $Destination -Recurse -Force
 }
 
 function Write-PortableScripts {
@@ -185,7 +206,9 @@ function Remove-PackageRuntimeArtifacts {
     } | ForEach-Object {
         Remove-Item -LiteralPath $_.FullName -Recurse -Force
     }
-    Get-ChildItem -LiteralPath $Path -Recurse -Force -File -Include "*.pyc", "*.pyo" | ForEach-Object {
+    Get-ChildItem -LiteralPath $Path -Recurse -Force -File | Where-Object {
+        $_.Extension.ToLowerInvariant() -in @(".pyc", ".pyo")
+    } | ForEach-Object {
         Remove-Item -LiteralPath $_.FullName -Force
     }
 }
@@ -196,7 +219,7 @@ function Assert-NoForbiddenPayload {
     $ForbiddenExtensions = @(".dll", ".pyd", ".exe", ".safetensors", ".pt", ".pth", ".onnx", ".ckpt", ".mp4", ".mkv", ".mov", ".avi", ".m4v", ".webm", ".wav", ".mp3", ".m4a", ".aac", ".flac", ".ogg", ".opus", ".srt", ".vtt", ".ass", ".ssa", ".log")
 
     $Matches = Get-ChildItem -LiteralPath $Path -Recurse -Force | Where-Object {
-        $RelativePath = [System.IO.Path]::GetRelativePath($Path, $_.FullName)
+        $RelativePath = Get-RelativePathCompat $Path $_.FullName
         $Parts = $RelativePath -split '[\\/]'
         $HasForbiddenDir = @($Parts | Where-Object { $ForbiddenDirs -contains $_ }).Count -gt 0
         $HasForbiddenDir -or
@@ -234,6 +257,34 @@ function Assert-NoPrivateText {
     }
 }
 
+function Assert-PortableRequiredFiles {
+    param([string]$Path)
+    $RequiredFiles = @(
+        "aisrt\cli.py",
+        "aisrt\assets\app.svg",
+        "docs\README.md",
+        "install_runtime.bat",
+        "start_gui.bat",
+        "open_shell.bat",
+        "README_PORTABLE.txt",
+        "README.md",
+        "SUPPORT.md",
+        "LICENSE",
+        "pyproject.toml",
+        "requirements.txt",
+        "requirements-torch-cu130.txt"
+    )
+    $Missing = foreach ($File in $RequiredFiles) {
+        if (-not (Test-Path -LiteralPath (Join-Path $Path $File) -PathType Leaf)) {
+            $File
+        }
+    }
+    $Missing = @($Missing)
+    if ($Missing.Count -gt 0) {
+        throw "Portable package is missing required files:$([Environment]::NewLine)$($Missing -join [Environment]::NewLine)"
+    }
+}
+
 function Compress-PortableArchive {
     param(
         [string]$SourceDir,
@@ -253,6 +304,44 @@ function Compress-PortableArchive {
         }
     } else {
         Compress-Archive -LiteralPath $SourceDir -DestinationPath $DestinationPath -CompressionLevel Optimal -Force
+    }
+}
+
+function Assert-ZipRequiredFiles {
+    param([string]$ZipPath)
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $PackageRoot = [System.IO.Path]::GetFileNameWithoutExtension($ZipPath)
+    $RequiredEntries = @(
+        "aisrt/cli.py",
+        "aisrt/assets/app.svg",
+        "docs/README.md",
+        "install_runtime.bat",
+        "start_gui.bat",
+        "open_shell.bat",
+        "README_PORTABLE.txt",
+        "README.md",
+        "SUPPORT.md",
+        "LICENSE",
+        "pyproject.toml",
+        "requirements.txt",
+        "requirements-torch-cu130.txt"
+    )
+
+    $Zip = [System.IO.Compression.ZipFile]::OpenRead($ZipPath)
+    try {
+        $Entries = @($Zip.Entries | ForEach-Object { $_.FullName.TrimEnd("/") })
+        $Missing = foreach ($Entry in $RequiredEntries) {
+            $Expected = "$PackageRoot/$Entry"
+            if ($Entries -notcontains $Expected) {
+                $Entry
+            }
+        }
+        $Missing = @($Missing)
+        if ($Missing.Count -gt 0) {
+            throw "ZIP is missing required files:$([Environment]::NewLine)$($Missing -join [Environment]::NewLine)"
+        }
+    } finally {
+        $Zip.Dispose()
     }
 }
 
@@ -321,14 +410,17 @@ try {
         ".env.example",
         "AGENTS.md",
         "CHANGELOG.md",
+        "CODE_OF_CONDUCT.md",
         "CONTRIBUTING.md",
         "LICENSE",
         "README.md",
         "SECURITY.md",
+        "SUPPORT.md",
         "activate_env.bat",
         "open_ui.bat",
         "pyproject.toml",
-        "requirements.txt"
+        "requirements.txt",
+        "requirements-torch-cu130.txt"
     )
     foreach ($Item in $PackageItems) {
         Copy-ProjectItem $Item
@@ -337,11 +429,13 @@ try {
     Write-PortableReadme
     Remove-PackageRuntimeArtifacts $PackageDir
 
+    Assert-PortableRequiredFiles $PackageDir
     Assert-NoForbiddenPayload $PackageDir
     Assert-NoPrivateText $PackageDir
 
     $ZipPath = Join-Path $ReleaseDir "$PackageName.zip"
     Compress-PortableArchive $PackageDir $ZipPath
+    Assert-ZipRequiredFiles $ZipPath
     Assert-ZipNoForbiddenPayload $ZipPath
 
     Invoke-Native $PythonPath @("-m", "build", "--wheel", "--no-isolation", "--outdir", $ReleaseDir)

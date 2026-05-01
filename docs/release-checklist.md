@@ -5,7 +5,9 @@
 ## 仓库内容
 
 - [ ] `README.md` 描述与当前功能一致。
-- [ ] `CONTRIBUTING.md`、`SECURITY.md` 已存在并无个人联系方式。
+- [ ] `CONTRIBUTING.md`、`SUPPORT.md`、`SECURITY.md`、`CODE_OF_CONDUCT.md` 已存在并无个人联系方式。
+- [ ] `.editorconfig` 与 `.gitattributes` 覆盖常见文本文件、批处理脚本和 PowerShell 脚本的换行规则。
+- [ ] `.github/` 中包含 Issue 模板、PR 模板、轻量 CI 和 GitHub Actions 依赖更新配置。
 - [ ] `CHANGELOG.md` 已记录本次面向用户或维护者的重要变化。
 - [ ] `docs/README.md` 能正确引导到开发、发布和安全文档。
 - [ ] `LICENSE`、README 和 `pyproject.toml` 中的许可证描述一致。
@@ -16,6 +18,7 @@
 
 - [ ] 扫描密钥、Token、鉴权头、个人邮箱、用户目录和本机绝对路径。
 - [ ] README、脚本、测试中不包含真实影片名或网盘目录。
+- [ ] README 和 docs 中的相对链接、图片路径均指向仓库内已跟踪文件。
 - [ ] Git 作者邮箱适合公开；必要时使用 GitHub noreply 邮箱整理发布分支。
 - [ ] 技术日志或截图已脱敏。
 - [ ] 样例路径使用 `<project-dir>`、`movie.mp4`、`sample.srt` 等占位值。
@@ -57,12 +60,13 @@ GUI 相关改动额外确认：
 
 打包约束：
 
-- [ ] ZIP 中包含 `install_runtime.bat`、`start_gui.bat`、`open_shell.bat`、`README_PORTABLE.txt`、`README.md`、`LICENSE` 和 `CHANGELOG.md`。
+- [ ] ZIP 中包含 `install_runtime.bat`、`start_gui.bat`、`open_shell.bat`、`README_PORTABLE.txt`、`README.md`、`SUPPORT.md`、`LICENSE`、`CHANGELOG.md`、`requirements.txt` 和 `requirements-torch-cu130.txt`。
 - [ ] ZIP 中不包含 Python 解释器、PyTorch/CUDA DLL、`.venv/`、模型权重、`.hf_cache/`、`models/`、测试媒体、截图、运行日志、生成字幕或本机绝对路径。
 - [ ] 模型权重依赖程序首次运行时按远程模型 ID 下载，不随 Release asset 分发。
 - [ ] Python 依赖由 `install_runtime.bat` 在用户本地 `.venv` 中安装，不随 Release asset 分发。
 - [ ] FFmpeg 和 ffprobe 不随当前 ZIP 分发，Release notes 需提醒用户手动安装并加入 `PATH`。
 - [ ] 解压 ZIP 后运行 `install_runtime.bat` 可完成依赖安装，随后 `start_gui.bat` 可启动 GUI。
+- [ ] GitHub Actions CI 在 PR 上通过，至少覆盖轻量单元测试、compileall、入口检查、wheel 构建和空白字符检查。
 
 GitHub Release：
 

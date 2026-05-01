@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
+from urllib.parse import unquote
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -62,6 +63,7 @@ REQUIRED_GITIGNORE_PATTERNS = {
     "dist/",
     "!requirements.txt",
     "!requirements-dev.txt",
+    "!requirements-torch-cu130.txt",
     "!.env.example",
 }
 REQUIRED_PROJECT_FILES = {
@@ -69,12 +71,26 @@ REQUIRED_PROJECT_FILES = {
     "README.md",
     "LICENSE",
     "CONTRIBUTING.md",
+    "SUPPORT.md",
     "SECURITY.md",
     "CHANGELOG.md",
+    "CODE_OF_CONDUCT.md",
+    ".editorconfig",
+    ".gitattributes",
+    "requirements.txt",
+    "requirements-dev.txt",
+    "requirements-torch-cu130.txt",
+    ".github/dependabot.yml",
+    ".github/pull_request_template.md",
+    ".github/ISSUE_TEMPLATE/bug_report.yml",
+    ".github/ISSUE_TEMPLATE/config.yml",
+    ".github/ISSUE_TEMPLATE/feature_request.yml",
+    ".github/workflows/ci.yml",
     "docs/README.md",
     "docs/engineering.md",
     "docs/release-checklist.md",
 }
+MARKDOWN_LINK_RE = re.compile(r"!?\[[^\]]*]\(([^)]+)\)")
 REQUIRED_PYPROJECT_SNIPPETS = {
     'name = "aisrt"',
     'license = { text = "MIT" }',
@@ -122,12 +138,36 @@ def test_standard_open_source_files_exist():
     assert missing == []
 
 
+def test_markdown_relative_links_point_to_existing_files():
+    broken = []
+    for path in iter_project_paths():
+        if path.suffix.lower() != ".md":
+            continue
+
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        for match in MARKDOWN_LINK_RE.finditer(text):
+            target = match.group(1).strip()
+            if not target or target.startswith(("#", "http://", "https://", "mailto:")):
+                continue
+            target = unquote(target.split("#", 1)[0]).strip("<>")
+            target_path = (path.parent / target).resolve()
+            try:
+                target_path.relative_to(PROJECT_ROOT)
+            except ValueError:
+                broken.append(f"{path.relative_to(PROJECT_ROOT).as_posix()}: {target}")
+                continue
+            if not target_path.exists():
+                broken.append(f"{path.relative_to(PROJECT_ROOT).as_posix()}: {target}")
+
+    assert broken == []
+
+
 def test_text_files_do_not_contain_obvious_private_data_or_old_project_names():
     offenders = []
     for path in iter_project_paths():
         if not path.is_file() or path.resolve() == SELF:
             continue
-        if path.suffix.lower() not in TEXT_SUFFIXES and path.name not in {".gitignore", ".gitattributes"}:
+        if path.suffix.lower() not in TEXT_SUFFIXES and path.name not in {".editorconfig", ".gitignore", ".gitattributes"}:
             continue
 
         text = path.read_text(encoding="utf-8", errors="ignore")

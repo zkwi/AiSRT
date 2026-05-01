@@ -1,0 +1,4 @@
+# Default PyTorch CUDA stack used by AISRT.
+--extra-index-url https://download.pytorch.org/whl/cu130
+torch==2.11.0+cu130
+torchaudio==2.11.0+cu130

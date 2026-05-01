@@ -1,0 +1,25 @@
+name: Feature request
+description: Suggest a practical AISRT improvement.
+title: "[Feature] "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: 使用场景
+      description: 说明这个改进要解决的实际问题。
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 建议方案
+      description: 描述你希望 AISRT 如何处理这个场景。
+    validations:
+      required: true
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: 范围确认
+      options:
+        - label: 这个需求不需要 Web UI、服务端、数据库、账号系统或在线任务队列。
+        - label: 这个需求不会要求把第三方翻译 API 接进本地处理链路。

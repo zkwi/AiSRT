@@ -44,10 +44,6 @@
   -> 输出 .srt 文件
 ```
 
-## 界面预览
-
-![AI 大模型字幕助手主界面](screenshots/ScreenShot_2026-04-30_204003_672.png)
-
 ## 快速开始
 
 Windows 10/11 是主要支持环境。Linux 和 macOS 可自行验证。
@@ -87,14 +83,14 @@ ai-sub "movie.mp4" --overwrite
 - 推荐 NVIDIA GPU。CPU 可以运行，但长视频会明显变慢。
 - 首次使用远程模型 ID 时需要下载模型权重，请预留足够磁盘空间。
 
-当前 `requirements.txt` 固定为 CUDA 版 PyTorch：
+当前默认安装使用 CUDA 版 PyTorch，具体固定项放在 `requirements-torch-cu130.txt`：
 
 ```text
 torch==2.11.0+cu130
 torchaudio==2.11.0+cu130
 ```
 
-如果你的 CUDA/PyTorch 环境不同，请先按 PyTorch 官方安装方式调整 `requirements.txt` 或手动安装匹配版本，再安装本项目依赖。
+如果你的 CUDA/PyTorch 环境不同，请先按 PyTorch 官方安装方式调整 `requirements-torch-cu130.txt`，或手动安装匹配版本后再安装本项目依赖。
 
 ## 图形界面
 
@@ -290,6 +286,12 @@ docs/              工程治理、发布检查和维护文档
 .\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
 ```
 
+依赖文件分工：
+
+- `requirements.txt`：普通运行环境，安装默认 CUDA PyTorch 栈和 AISRT 包。
+- `requirements-dev.txt`：开发环境，复用默认 CUDA PyTorch 栈，并以 editable 模式安装开发工具。
+- `requirements-torch-cu130.txt`：默认 CUDA PyTorch 固定项；切换 CUDA/CPU 版本时优先改这里。
+
 常用检查：
 
 ```powershell
@@ -322,7 +324,7 @@ dist/release/SHA256SUMS.txt
 
 - Portable ZIP 不包含模型权重、模型缓存、测试媒体、截图、日志或生成字幕。
 - Portable ZIP 不包含 Python 解释器、PyTorch/CUDA DLL 或其他本地运行环境。
-- 解压后运行 `install_runtime.bat`，脚本会在当前目录创建 `.venv` 并安装 Python 依赖。
+- 解压后运行 `install_runtime.bat`，脚本会在当前目录创建 `.venv` 并安装 `requirements.txt` 中的 Python 依赖。
 - 使用远程模型 ID 时，模型权重会在首次运行时下载到 Hugging Face 缓存目录。
 - FFmpeg 和 ffprobe 需要用户单独安装，并确保可在 `PATH` 中直接运行。
 - Release asset 上传前应保留 ZIP、wheel 和 `SHA256SUMS.txt` 三个文件。
@@ -332,7 +334,9 @@ dist/release/SHA256SUMS.txt
 
 - [AGENTS.md](AGENTS.md)：给代码代理和维护者看的项目约束、验证命令和协作规则。
 - [贡献指南](CONTRIBUTING.md)：开发原则、提交前检查、Issue 与 PR 要求。
+- [支持说明](SUPPORT.md)：Issue 范围、提问前检查和隐私提醒。
 - [安全说明](SECURITY.md)：敏感信息、日志脱敏和安全问题报告。
+- [行为准则](CODE_OF_CONDUCT.md)：公开协作中的基本沟通规则。
 - [工程治理说明](docs/engineering.md)：源码模块边界、GUI/CLI 约定和发布前检查。
 - [开源发布检查清单](docs/release-checklist.md)：发布前逐项核对。
 - [变更日志](CHANGELOG.md)：版本变更记录。
