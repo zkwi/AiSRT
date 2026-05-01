@@ -4,7 +4,7 @@
 
 ## 仓库内容
 
-- [ ] `README.md` 描述与当前功能一致。
+- [ ] `README.md` 和 `README.en.md` 描述与当前功能一致，并互相提供语言切换链接。
 - [ ] `CONTRIBUTING.md`、`SUPPORT.md`、`SECURITY.md`、`CODE_OF_CONDUCT.md` 已存在并无个人联系方式。
 - [ ] `.editorconfig` 与 `.gitattributes` 覆盖常见文本文件、批处理脚本和 PowerShell 脚本的换行规则。
 - [ ] `.github/` 中包含 Issue 模板、PR 模板、轻量 CI 和 GitHub Actions 依赖更新配置。
@@ -17,7 +17,7 @@
 ## 隐私与敏感信息
 
 - [ ] 扫描密钥、Token、鉴权头、个人邮箱、用户目录和本机绝对路径。
-- [ ] README、脚本、测试中不包含真实影片名或网盘目录。
+- [ ] README、README.en、脚本、测试中不包含真实影片名或网盘目录。
 - [ ] README 和 docs 中的相对链接、图片路径均指向仓库内已跟踪文件。
 - [ ] Git 作者邮箱适合公开；必要时使用 GitHub noreply 邮箱整理发布分支。
 - [ ] 技术日志或截图已脱敏。

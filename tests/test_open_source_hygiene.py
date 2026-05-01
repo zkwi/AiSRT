@@ -69,6 +69,7 @@ REQUIRED_GITIGNORE_PATTERNS = {
 REQUIRED_PROJECT_FILES = {
     "AGENTS.md",
     "README.md",
+    "README.en.md",
     "LICENSE",
     "CONTRIBUTING.md",
     "SUPPORT.md",

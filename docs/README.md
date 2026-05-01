@@ -4,7 +4,8 @@
 
 ## 用户与使用
 
-- [README](../README.md)：项目介绍、安装、GUI/CLI 基本用法、模型与缓存说明。
+- [README](../README.md)：中文项目介绍、安装、GUI/CLI 基本用法、模型与缓存说明。
+- [README.en](../README.en.md)：英文项目介绍、安装、GUI/CLI 基本用法、模型与缓存说明。
 - [SUPPORT](../SUPPORT.md)：Issue 范围、提问前检查和隐私提醒。
 - [SECURITY](../SECURITY.md)：安全范围、敏感信息处理、漏洞报告方式。
 - [行为准则](../CODE_OF_CONDUCT.md)：公开协作中的基本沟通规则。
