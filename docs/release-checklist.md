@@ -21,6 +21,7 @@
 - [ ] README 和 docs 中的相对链接、图片路径均指向仓库内已跟踪文件。
 - [ ] Git 作者邮箱适合公开；必要时使用 GitHub noreply 邮箱整理发布分支。
 - [ ] 技术日志或截图已脱敏。
+- [ ] README 预览图放在 `docs/assets/` 等可跟踪路径；`screenshots/` 只用于本地临时截图。
 - [ ] 样例路径使用 `<project-dir>`、`movie.mp4`、`sample.srt` 等占位值。
 
 ## 功能验证
