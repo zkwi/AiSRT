@@ -49,13 +49,13 @@ GUI 相关改动额外确认：
 构建命令：
 
 ```powershell
-.\scripts\build_portable.ps1 -Version 0.1.0
+.\scripts\build_portable.ps1 -Version 0.1.1
 ```
 
 产物应位于 `dist/release/`：
 
-- [ ] `AiSRT-v0.1.0-windows-portable.zip`
-- [ ] `aisrt-0.1.0-py3-none-any.whl`
+- [ ] `AiSRT-v0.1.1-windows-portable.zip`
+- [ ] `aisrt-0.1.1-py3-none-any.whl`
 - [ ] `SHA256SUMS.txt`
 
 打包约束：
@@ -67,17 +67,18 @@ GUI 相关改动额外确认：
 - [ ] FFmpeg 和 ffprobe 不随当前 ZIP 分发，Release notes 需提醒用户手动安装并加入 `PATH`。
 - [ ] 解压 ZIP 后运行 `install_runtime.bat` 可完成依赖安装，随后 `start_gui.bat` 可启动 GUI。
 - [ ] GitHub Actions CI 在 PR 上通过，至少覆盖轻量单元测试、compileall、入口检查、wheel 构建和空白字符检查。
+- [ ] `RELEASE_NOTES.md` 包含简体中文和英文说明，且中文按 UTF-8 正常显示。
 
 GitHub Release：
 
 ```powershell
-git tag v0.1.0
-git push origin v0.1.0
-gh release create v0.1.0 `
-  dist/release/AiSRT-v0.1.0-windows-portable.zip `
-  dist/release/aisrt-0.1.0-py3-none-any.whl `
+git tag v0.1.1
+git push origin v0.1.1
+gh release create v0.1.1 `
+  dist/release/AiSRT-v0.1.1-windows-portable.zip `
+  dist/release/aisrt-0.1.1-py3-none-any.whl `
   dist/release/SHA256SUMS.txt `
-  --title "AISRT v0.1.0" `
+  --title "AISRT v0.1.1" `
   --notes-file dist/release/RELEASE_NOTES.md
 ```
 

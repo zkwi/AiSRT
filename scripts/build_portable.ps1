@@ -454,24 +454,7 @@ try {
     }
     Set-Content -LiteralPath (Join-Path $ReleaseDir "SHA256SUMS.txt") -Value $HashLines -Encoding ASCII
 
-    $ReleaseNotesTemplate = @'
-# AISRT v$Version
-
-This release provides a lightweight Windows portable source package and a Python wheel.
-
-Assets:
-
-- `AiSRT-v$Version-windows-portable.zip`: lightweight Windows package with source code, launch scripts and dependency files.
-- `aisrt-$Version-py3-none-any.whl`: Python wheel for users who prefer manual Python installation.
-- `SHA256SUMS.txt`: SHA256 checksums for release assets.
-
-Notes:
-
-- Python, PyTorch/CUDA runtime libraries, model weights, model caches, FFmpeg, media files, generated subtitles, screenshots, tests and logs are not included.
-- Run `install_runtime.bat` after extracting the ZIP to create `.venv` and install Python dependencies.
-- When remote model IDs are used, AISRT downloads model weights to the configured Hugging Face cache on first use.
-- FFmpeg and ffprobe must be installed separately and available in `PATH`.
-'@
+    $ReleaseNotesTemplate = Get-Content -LiteralPath (Join-Path $RepoRoot "packaging\release-notes-template.md") -Raw -Encoding UTF8
     $ReleaseNotes = $ReleaseNotesTemplate.Replace('$Version', $Version)
     Set-Content -LiteralPath (Join-Path $ReleaseDir "RELEASE_NOTES.md") -Value $ReleaseNotes -Encoding UTF8
 

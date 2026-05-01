@@ -309,8 +309,8 @@ git diff --check
 Windows portable 包是轻量源码包，不包含 Python、PyTorch/CUDA 运行库、模型权重、FFmpeg、`.venv`、缓存、媒体、字幕、截图或日志。目标产物为：
 
 ```text
-dist/release/AiSRT-v0.1.0-windows-portable.zip
-dist/release/aisrt-0.1.0-py3-none-any.whl
+dist/release/AiSRT-v0.1.1-windows-portable.zip
+dist/release/aisrt-0.1.1-py3-none-any.whl
 dist/release/SHA256SUMS.txt
 ```
 

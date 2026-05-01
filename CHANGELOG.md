@@ -6,10 +6,13 @@ This project follows a simple changelog style for now: group user-visible change
 
 ## Unreleased
 
+## 0.1.1 - 2026-05-01
+
 - Added GitHub community files, issue and pull request templates, lightweight CI and Dependabot configuration.
 - Split the default CUDA PyTorch requirements into a shared requirements file for runtime and development installs.
 - Strengthened open-source hygiene checks for required community files, private data patterns and Markdown links.
 - Removed the README screenshot reference because runtime screenshots are intentionally ignored before release.
+- Added a UTF-8 bilingual release notes template for GitHub Releases.
 
 ## 0.1.0 - 2026-04-30
 
