@@ -7,7 +7,7 @@ name = "aisrt"
 version = "0.1.1"
 description = "Local CLI and GUI for generating multilingual SRT subtitles with local ASR models."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.13"
 authors = [{ name = "AISRT Contributors" }]
 license = { text = "MIT" }
 keywords = ["asr", "subtitle", "srt", "pyqt", "speech-recognition"]
@@ -22,6 +22,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Multimedia :: Sound/Audio :: Speech",
     "Topic :: Multimedia :: Video",
 ]

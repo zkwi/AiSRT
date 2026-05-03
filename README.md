@@ -84,7 +84,7 @@ ai-sub "movie.mp4" --overwrite
 
 ## 环境要求
 
-- Python 3.10 或更高版本，推荐 Python 3.11。
+- Python 3.10-3.12，推荐 Python 3.11。
 - FFmpeg 与 ffprobe 已安装，并可在命令行中直接运行。
 - 推荐 NVIDIA GPU。CPU 可以运行，但长视频会明显变慢。
 - 首次使用远程模型 ID 时需要下载模型权重，请预留足够磁盘空间。

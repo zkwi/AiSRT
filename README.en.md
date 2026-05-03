@@ -84,7 +84,7 @@ You can also use the helper scripts:
 
 ## Requirements
 
-- Python 3.10 or later. Python 3.11 is recommended.
+- Python 3.10-3.12. Python 3.11 is recommended.
 - FFmpeg and ffprobe installed and available from the command line.
 - NVIDIA GPU is recommended. CPU can run, but long videos will be much slower.
 - First-time use with remote model IDs requires downloading model weights, so reserve enough disk space.

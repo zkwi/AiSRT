@@ -1,3 +1,4 @@
-# Runtime install for the default CUDA environment.
+# Runtime install for Python 3.10-3.12; Python 3.11 is recommended.
+# Uses the default CUDA environment.
 -r requirements-torch-cu130.txt
 .
