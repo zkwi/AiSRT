@@ -360,8 +360,8 @@ The Windows portable package is a lightweight source package. It does not includ
 Expected artifacts:
 
 ```text
-dist/release/AiSRT-v0.1.1-windows-portable.zip
-dist/release/aisrt-0.1.1-py3-none-any.whl
+dist/release/AiSRT-v0.1.2-windows-portable.zip
+dist/release/aisrt-0.1.2-py3-none-any.whl
 dist/release/SHA256SUMS.txt
 ```
 
