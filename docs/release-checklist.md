@@ -1,6 +1,6 @@
-# 开源发布检查清单
+# AISRT 开源发布检查清单：本地 AI 字幕生成工具发布 Wiki
 
-发布到 GitHub 前按此清单核对。
+AISRT 发布到 GitHub 前按此清单核对，重点覆盖本地 AI 字幕生成、视频音频转 SRT、SRT 翻译、Windows portable 包、隐私脱敏和开源仓库内容。
 
 ## 仓库内容
 

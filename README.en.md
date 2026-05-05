@@ -1,14 +1,16 @@
-# AISRT
+# AISRT - Local AI Subtitle Generator and SRT Translation Tool
 
 Language: [简体中文](README.md) | English
 
-AISRT is a local audio/video subtitle generator. It uses local large-model ASR to transcribe speech from media files and generate timestamped SRT subtitles.
+AISRT is a local AI subtitle generator for converting video and audio files into timestamped `.srt` subtitles. It uses local large-model ASR for multilingual speech recognition, combines forced alignment for more accurate subtitle timing, and supports local SRT translation for privacy-friendly offline subtitle workflows.
 
 The project is intentionally scoped as a personal desktop and command-line tool. It prioritizes simplicity, stability, and maintainability. It is not a web UI, backend service, database-backed app, or hosted subtitle platform.
 
+Keywords: local AI subtitle generator, video to SRT, audio to SRT, multilingual ASR, subtitle alignment, SRT translation, offline subtitle tool, Windows subtitle generator, GUI subtitle app, CLI subtitle batch processing.
+
 ## Preview
 
-![AISRT main window](docs/assets/aisrt-main-window.png)
+![AISRT local AI subtitle generator main window for video to SRT, audio to SRT, multilingual ASR, and local translation](docs/assets/aisrt-main-window.png)
 
 ## Features
 
@@ -104,12 +106,12 @@ The GUI is designed for regular users and keeps only common actions on the main 
 
 - Add files: select one or more video/audio files, or drag files into the window.
 - Start processing: generate original ASR subtitles for queued files.
-- Recognize + Translate: generate original ASR subtitles, then output translated subtitles in the target language.
+- Enable translation: when checked, Start writes original ASR subtitles first, then outputs translated subtitles in the target language.
 - File queue: shows file name, status, progress, and subtitle directory.
-- Common settings: context, recognition language, output language, run mode, and model size.
+- Common settings: context, recognition language, whether translation is enabled, target language, run mode, and model size.
 - Advanced settings: device, audio chunk size, subtitle style, overwrite behavior, and local cache.
 - Run log: friendly messages by default; technical logs can be enabled when needed.
-- Translate subtitles: choose an existing SRT file and translate it locally into multiple target languages.
+- Translate existing SRT: choose an existing SRT file and translate it locally into multiple target languages.
 
 Default behavior:
 
@@ -117,13 +119,14 @@ Default behavior:
 - Existing `.srt` files are not overwritten unless confirmed.
 - The UI supports Simplified Chinese, Traditional Chinese, and English.
 - The current run remembers the last media directory used for adding files.
-- Icons are reserved for add files and start processing; recognize + translate, stop, and translate SRT stay text-only.
+- Icons are reserved for add files and start processing; the translation toggle, stop, and translate existing SRT actions stay text-only.
 
 Recommended settings:
 
 | Setting | Default | Recommendation |
 | --- | --- | --- |
 | Recognition language | Auto | Keep auto when unsure; specify the language when known. |
+| Enable translation | Off | Turn it on only when you also need target-language subtitles; original subtitles are kept. |
 | Run mode | Balanced | Switch to low-memory mode when GPU memory is tight. |
 | Model size | 1.7B | Use 1.7B for quality, 0.6B for speed or lower memory use. |
 | Audio chunks | Recommended, 45 seconds | Use conservative, 30 seconds, if recognition is unstable. |
@@ -131,7 +134,7 @@ Recommended settings:
 
 ## SRT Translation
 
-AISRT does not call third-party translation APIs and does not automatically upload subtitle files. The GUI's "Translate subtitles" action opens a local translation dialog:
+AISRT does not call third-party translation APIs and does not automatically upload subtitle files. The GUI's "Translate Existing SRT" action opens a local translation dialog:
 
 1. Choose an existing `.srt` file.
 2. Choose a target language from common presets, or type another language.
@@ -139,14 +142,14 @@ AISRT does not call third-party translation APIs and does not automatically uplo
 
 Only subtitle text is sent to the local HY-MT model; AISRT preserves and merges SRT numbering and timestamps in code. Quality mode uses the official HY-MT 1.8B model by default. Fast mode uses a lightweight quantized model for quick previews. Translation reuses the existing `.venv` PyTorch/CUDA stack, so users do not need to install another Python or CUDA environment.
 
-The main window's "Recognize + Translate" action is for one-step bilingual output from audio or video. For example, when recognition language is English and output language is Simplified Chinese, AISRT writes:
+When "Enable translation" is checked on the main window, AISRT can produce one-step bilingual output from audio or video. For example, when recognition language is English and target language is Simplified Chinese, AISRT writes:
 
 ```text
 movie.srt      # Original English subtitles from ASR
 movie.zh.srt   # Simplified Chinese subtitles from local translation
 ```
 
-The one-step flow writes the original ASR subtitles before loading the translation model. If the translation model is missing or translation fails, the original subtitles stay in place, the queue shows "Translation failed, original kept", and the failed item can be retried after the model is ready.
+When translation is enabled, processing writes the original ASR subtitles before loading the translation model. If the translation model is missing or translation fails, the original subtitles stay in place, the queue shows "Translation failed, original kept", and the failed item can be retried after the model is ready.
 
 ## CLI
 
@@ -254,6 +257,18 @@ movie.txt
 ```
 
 ## FAQ
+
+### What is AISRT?
+
+AISRT is a local AI subtitle generator for personal use. It can generate `.srt` subtitles from video or audio files and translate existing SRT subtitles locally.
+
+### Which subtitle workflows does AISRT support?
+
+Common workflows include video to SRT, audio to SRT, multilingual speech recognition, subtitle timestamp alignment, SRT subtitle translation, GUI multi-file queue processing, and CLI batch processing.
+
+### Does AISRT upload media or subtitles?
+
+No. AISRT runs ASR, forced alignment, and translation models locally by default. It does not call cloud translation APIs and does not automatically upload media, subtitles, or logs.
 
 ### FFmpeg is not found
 

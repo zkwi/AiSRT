@@ -123,6 +123,7 @@ def test_main_window_uses_native_styles_and_system_font():
     assert all(value % 2 == 0 for value in qss_font_sizes)
     assert "QLabel#WindowTitle {\n    font-size: 18pt;" in APP_QSS
     assert "QLabel#SectionTitle {\n    font-size: 16pt;" in APP_QSS
+    assert "QComboBox:disabled" in APP_QSS
     assert "#RootWidget QLabel," in APP_QSS
     assert "#RootWidget QComboBox," in APP_QSS
     assert "font-size: 14pt;" in APP_QSS
@@ -180,7 +181,7 @@ def test_ui_language_switch_supports_simplified_traditional_and_english(tmp_path
     assert window.title_label.text() == "AI Subtitle Assistant"
     assert "Multilingual recognition" in window.subtitle_label.text()
     assert window.add_files_button.text() == "Add Files"
-    assert window.translation_button.text() == "Translate SRT"
+    assert window.translation_button.text() == "Translate Existing SRT"
     assert window.start_button.text() == "Start"
     assert window.file_queue_title_label.text() == "File Queue"
     assert window.empty_title_label.text() == "No files added"
@@ -215,7 +216,7 @@ def test_ui_language_switch_supports_simplified_traditional_and_english(tmp_path
     assert window.windowTitle() == "AI 大模型字幕助手"
     assert "多語言辨識" in window.subtitle_label.text()
     assert window.add_files_button.text() == "新增檔案"
-    assert window.translation_button.text() == "翻譯字幕"
+    assert window.translation_button.text() == "翻譯既有 SRT"
     assert window.table.horizontalHeaderItem(2).text() == "字幕目錄"
     assert window.table.item(0, 1).text() == ""
     assert queue_status_text(window) == "等待"
@@ -250,6 +251,7 @@ def test_english_ui_has_no_untranslated_visible_copy(tmp_path):
     assert window.progress_detail_text("加载翻译模型") == "Loading translation model"
 
     window.append_log("[START] 开始处理")
+    window.append_log("[START] 开始处理（含翻译）")
     window.append_log("[CANCEL] 已请求停止处理")
     window.append_log("[ERROR] 模型加载失败")
     window.append_log("[ERROR] movie.mp4: 显存不足。建议使用“低显存”运行模式，或切换到 0.6B 模型后重试。")
@@ -257,6 +259,7 @@ def test_english_ui_has_no_untranslated_visible_copy(tmp_path):
 
     log_text = window.log_box.toPlainText()
     assert "Processing started." in log_text
+    assert "Processing and translation started." in log_text
     assert "Cancelled: Stop requested" in log_text
     assert "Error: Model load failed" in log_text
     assert "movie.mp4: Not enough VRAM." in log_text
@@ -319,8 +322,8 @@ def test_diagnostics_messages_are_localized_for_ui():
 def test_subtitle_translation_dialog_uses_local_hymt_flow(tmp_path):
     window = MainWindow()
 
-    assert window.translation_button.text() == "翻译字幕"
-    assert window.translation_button.property("variant") == "secondary"
+    assert window.translation_button.text() == "翻译已有 SRT"
+    assert window.translation_button.property("variant") == "ghost"
     assert window.translation_dialog.isModal()
     assert window.translation_dialog.minimumWidth() >= 820
     assert window.translation_source_label.text() == "SRT 文件"
@@ -346,7 +349,7 @@ def test_subtitle_translation_dialog_uses_local_hymt_flow(tmp_path):
     assert window.translation_output_edit.text().endswith("movie.es.srt")
 
     window.ui_language_combo.setCurrentText("English")
-    assert window.translation_button.text() == "Translate SRT"
+    assert window.translation_button.text() == "Translate Existing SRT"
     assert window.translation_browse_button.text() == "Choose SRT"
     assert window.translation_target_label.text() == "Target language"
     assert window.translation_start_button.text() == "Start Translation"
@@ -392,43 +395,56 @@ def test_translation_dialog_handles_targets_and_progress_state(tmp_path):
     window.close()
 
 
-def test_main_window_exposes_one_click_recognize_and_translate(tmp_path):
+def test_main_window_integrates_translation_into_main_flow(tmp_path):
     window = MainWindow()
 
-    assert window.output_language_label.text() == "输出语言"
+    assert window.enable_translation_label.text() == "是否启用翻译"
+    assert window.enable_translation_check.text() == "启用"
+    assert not window.enable_translation_check.isChecked()
+    assert window.start_button.text() == "开始处理"
+    assert window.output_language_label.text() == "目标语言"
+    assert not window.output_language_combo.isEnabled()
     assert window.output_language_combo.currentData() == "简体中文"
     assert "英语" in [window.output_language_combo.itemText(index) for index in range(window.output_language_combo.count())]
-    assert window.start_translate_button.text() == "识别并翻译"
-    assert window.start_translate_button.property("variant") == "secondary"
-    assert window.start_translate_button.icon().isNull()
+    assert not hasattr(window, "start_translate_button")
 
     media_path = tmp_path / "movie.mp4"
     media_path.write_bytes(b"")
     window.add_paths([media_path])
-    window.set_combo_data(window.output_language_combo, "Spanish")
 
     asr_options = window.options()
     assert not asr_options.translate_after_asr
-    translate_options = window.options(translate_after_asr=True)
+
+    window.enable_translation_check.setChecked(True)
+    assert window.start_button.text() == "处理并翻译"
+    assert window.output_language_combo.isEnabled()
+    window.set_combo_data(window.output_language_combo, "Spanish")
+
+    translate_options = window.options()
     assert translate_options.translate_after_asr
     assert translate_options.translation_target_language == "Spanish"
 
     window.output_language_combo.setCurrentText("Italian")
-    assert window.options(translate_after_asr=True).translation_target_language == "Italian"
+    assert window.options().translation_target_language == "Italian"
     window.ui_language_combo.setCurrentText("English")
     assert window.output_language_combo.currentText() == "Italian"
-    assert window.options(translate_after_asr=True).translation_target_language == "Italian"
-    assert window.output_language_label.text() == "Output language"
-    assert window.start_translate_button.text() == "Recognize + Translate"
+    assert window.options().translation_target_language == "Italian"
+    assert window.enable_translation_label.text() == "Enable translation?"
+    assert window.enable_translation_check.text() == "Enable"
+    assert window.output_language_label.text() == "Target language"
+    assert window.start_button.text() == "Start + Translate"
 
     window.set_running(True)
     assert window.start_button.isHidden()
-    assert window.start_translate_button.isHidden()
+    assert not window.enable_translation_check.isEnabled()
+    assert not window.output_language_combo.isEnabled()
     assert not window.stop_button.isHidden()
 
     window.set_running(False)
     assert not window.start_button.isHidden()
-    assert not window.start_translate_button.isHidden()
+    assert window.enable_translation_check.isEnabled()
+    assert window.output_language_combo.isEnabled()
+    assert window.start_button.text() == "Start + Translate"
 
     window.close()
 
@@ -489,25 +505,19 @@ def test_primary_actions_are_simplified_and_contextual():
     assert "QPushButton#StopButton" in APP_QSS
     assert not window.start_button.isHidden()
     assert not window.start_button.isEnabled()
-    assert window.start_translate_button.text() == "识别并翻译"
-    assert window.start_translate_button.property("variant") == "secondary"
-    assert window.start_translate_button.icon().isNull()
-    assert not window.start_translate_button.isHidden()
-    assert not window.start_translate_button.isEnabled()
+    assert not hasattr(window, "start_translate_button")
     assert window.stop_button.isHidden()
     assert window.progress_panel.isHidden()
     assert window.progress_panel.parent() is None
 
     window.set_running(True)
     assert window.start_button.isHidden()
-    assert window.start_translate_button.isHidden()
     assert not window.stop_button.isHidden()
     assert window.stop_button.isEnabled()
     assert window.progress_panel.isHidden()
 
     window.set_running(False)
     assert not window.start_button.isHidden()
-    assert not window.start_translate_button.isHidden()
     assert window.stop_button.isHidden()
     assert window.progress_panel.isHidden()
 
@@ -675,7 +685,6 @@ def test_empty_queue_guides_user_and_hides_blank_table(tmp_path):
     assert not window.empty_state.isHidden()
     assert window.table.isHidden()
     assert not window.start_button.isEnabled()
-    assert not window.start_translate_button.isEnabled()
     assert window.current_label.text() == "请先添加文件"
 
     window.close()

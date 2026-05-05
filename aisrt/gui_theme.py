@@ -219,6 +219,18 @@ QComboBox:focus {
     border: 1px solid #2F6BFF;
 }
 
+QLineEdit:disabled,
+QComboBox:disabled {
+    color: #9CA3AF;
+    background-color: #F3F6FB;
+    border-color: #E5E7EB;
+}
+
+QLabel:disabled,
+QCheckBox:disabled {
+    color: #9CA3AF;
+}
+
 QComboBox::drop-down {
     width: 42px;
     border: none;
@@ -341,6 +353,11 @@ QCheckBox::indicator:checked {
     image: url("__CHECK_WHITE_ICON__");
     background-color: #2F6BFF;
     border-color: #2F6BFF;
+}
+
+QCheckBox::indicator:disabled {
+    background-color: #F3F6FB;
+    border-color: #E5E7EB;
 }
 
 QLabel#StatusIcon {
