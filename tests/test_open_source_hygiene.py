@@ -94,7 +94,7 @@ REQUIRED_PROJECT_FILES = {
 MARKDOWN_LINK_RE = re.compile(r"!?\[[^\]]*]\(([^)]+)\)")
 REQUIRED_PYPROJECT_SNIPPETS = {
     'name = "aisrt"',
-    'license = { text = "MIT" }',
+    'license = "MIT"',
     'license-files = ["LICENSE"]',
     "classifiers = [",
     "keywords = [",
