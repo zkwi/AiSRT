@@ -56,6 +56,7 @@ from .gui_assets import (
 from .gui_i18n import (
     UI_LANGUAGE_OPTIONS,
     format_diagnostics_for_ui,
+    format_file_count,
     resolve_initial_ui_language,
     technical_log_text,
     tr,
@@ -1632,18 +1633,7 @@ class MainWindow(QMainWindow):
         has_files = bool(self.files)
         running = self.is_running()
         count = len(self.files)
-        if self.ui_language == "en":
-            self.file_count_label.setText(f"{count} {'file' if count == 1 else 'files'}")
-        elif self.ui_language == "zh-Hant":
-            self.file_count_label.setText(f"{count} 個檔案")
-        elif self.ui_language == "ja":
-            self.file_count_label.setText(f"{count} 件")
-        elif self.ui_language == "ko":
-            self.file_count_label.setText(f"{count}개 파일")
-        elif self.ui_language == "es":
-            self.file_count_label.setText(f"{count} archivo" if count == 1 else f"{count} archivos")
-        else:
-            self.file_count_label.setText(f"{count} 个文件")
+        self.file_count_label.setText(format_file_count(self.ui_language, count))
         self.empty_state.setVisible(not has_files)
         self.table.setVisible(has_files)
         self.start_button.setEnabled(has_files and not running)

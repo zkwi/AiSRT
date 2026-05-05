@@ -48,6 +48,7 @@ from aisrt.gui_i18n import (
     TEXT,
     UI_LANGUAGE_OPTIONS,
     format_diagnostics_for_ui,
+    format_file_count,
     resolve_initial_ui_language,
     ui_language_from_locale,
 )
@@ -269,6 +270,18 @@ def test_i18n_dictionaries_have_complete_keys():
     assert languages == ["zh-Hans", "zh-Hant", "en", "ja", "ko", "es"]
     for language in languages:
         assert set(TEXT[language]) == reference
+
+
+def test_file_count_text_is_localized_for_all_ui_languages():
+    assert format_file_count("zh-Hans", 2) == "2 个文件"
+    assert format_file_count("zh-Hant", 2) == "2 個檔案"
+    assert format_file_count("en", 1) == "1 file"
+    assert format_file_count("en", 2) == "2 files"
+    assert format_file_count("ja", 2) == "2 件"
+    assert format_file_count("ko", 2) == "2개 파일"
+    assert format_file_count("es", 1) == "1 archivo"
+    assert format_file_count("es", 2) == "2 archivos"
+    assert format_file_count("unknown", 2) == "2 个文件"
 
 
 def test_initial_ui_language_follows_system_locale_and_saved_choice(tmp_path):

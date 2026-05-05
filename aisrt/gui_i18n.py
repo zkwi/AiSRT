@@ -1118,6 +1118,20 @@ def tr(language: str, key: str, **values: object) -> str:
     return text.format(**values)
 
 
+def format_file_count(language: str, count: int) -> str:
+    if language == "en":
+        return f"{count} {'file' if count == 1 else 'files'}"
+    if language == "zh-Hant":
+        return f"{count} 個檔案"
+    if language == "ja":
+        return f"{count} 件"
+    if language == "ko":
+        return f"{count}개 파일"
+    if language == "es":
+        return f"{count} archivo" if count == 1 else f"{count} archivos"
+    return f"{count} 个文件"
+
+
 def format_diagnostics_for_ui(results: list[object], language: str) -> str:
     labels = {
         "ok": "OK",
