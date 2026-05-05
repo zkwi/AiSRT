@@ -198,7 +198,8 @@ class MainWindow(QMainWindow):
         self.clear_completed_action.triggered.connect(self.clear_completed_files)
         self.retry_failed_action.triggered.connect(self.retry_failed_files)
         self.open_folder_action.triggered.connect(self.open_output_folder)
-        self.start_button.clicked.connect(self.start_processing)
+        self.start_button.clicked.connect(lambda: self.start_processing(False))
+        self.start_translate_button.clicked.connect(lambda: self.start_processing(True))
         self.stop_button.clicked.connect(self.request_stop)
         self.table.customContextMenuRequested.connect(self.show_table_context_menu)
         self.table.itemSelectionChanged.connect(self.update_queue_actions)
@@ -227,6 +228,9 @@ class MainWindow(QMainWindow):
         default_data: object | None = None,
     ) -> None:
         current_data = combo.currentData()
+        current_text = combo.currentText().strip()
+        if combo.isEditable() and current_text and combo.findText(current_text) < 0:
+            current_data = current_text
         if current_data is None:
             current_data = default_data
         combo.blockSignals(True)
@@ -234,7 +238,10 @@ class MainWindow(QMainWindow):
         for text_key, data in options:
             combo.addItem(self.t(text_key), data)
         if current_data is not None:
-            self.set_combo_data(combo, current_data)
+            if combo.findData(current_data) >= 0:
+                self.set_combo_data(combo, current_data)
+            elif combo.isEditable():
+                combo.setCurrentText(str(current_data))
         combo.blockSignals(False)
 
     def set_status_text(self, phase_key: str, current_key: str, **values: object) -> None:
@@ -318,11 +325,19 @@ class MainWindow(QMainWindow):
         self.refresh_translation_output_preview()
 
     def current_translation_target(self) -> str:
-        current_text = self.translation_target_combo.currentText().strip()
-        current_data = self.translation_target_combo.currentData()
-        if self.translation_target_combo.findText(current_text) >= 0 and isinstance(current_data, str):
-            return current_data
-        return current_text or "简体中文"
+        return self.current_combo_text_or_data(self.translation_target_combo, "简体中文")
+
+    def current_output_language(self) -> str:
+        return self.current_combo_text_or_data(self.output_language_combo, "简体中文")
+
+    def current_combo_text_or_data(self, combo: QComboBox, fallback: str) -> str:
+        current_text = combo.currentText().strip()
+        index = combo.findText(current_text)
+        if index >= 0:
+            item_data = combo.itemData(index)
+            if isinstance(item_data, str):
+                return item_data
+        return current_text or fallback
 
     def refresh_translation_output_preview(self) -> None:
         source_text = self.translation_source_edit.text().strip()
@@ -507,6 +522,7 @@ class MainWindow(QMainWindow):
         self.title_label.setObjectName("WindowTitle")
         self.subtitle_label = QLabel(APP_PRODUCT_SUBTITLE)
         self.subtitle_label.setObjectName("WindowSubtitle")
+        self.subtitle_label.setWordWrap(True)
         title_box.addWidget(self.title_label)
         title_box.addWidget(self.subtitle_label)
 
@@ -514,7 +530,7 @@ class MainWindow(QMainWindow):
         self.ui_language_combo.setObjectName("LanguageSwitch")
         for code, label in UI_LANGUAGE_OPTIONS:
             self.ui_language_combo.addItem(label, code)
-        self.ui_language_combo.setMinimumWidth(122)
+        self.ui_language_combo.setMinimumWidth(180)
         self.prepare_combo(self.ui_language_combo, max_visible_items=3)
         self.set_combo_data(self.ui_language_combo, self.ui_language)
 
@@ -542,6 +558,10 @@ class MainWindow(QMainWindow):
             self.start_button.setIcon(self.standard_icon(QStyle.StandardPixmap.SP_MediaPlay))
         else:
             self.start_button.setIcon(self.play_icon)
+        self.start_translate_button = QPushButton("识别并翻译")
+        self.start_translate_button.setProperty("variant", "secondary")
+        self.start_translate_button.setToolTip("识别字幕后翻译为输出语言")
+        self.prepare_button(self.start_translate_button)
         self.stop_button = QPushButton("停止")
         self.stop_button.setObjectName("StopButton")
         self.stop_button.setProperty("variant", "danger")
@@ -553,9 +573,9 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.logo_label)
         layout.addLayout(title_box, 1)
         layout.addWidget(self.ui_language_combo)
-        layout.addWidget(self.translation_button)
         layout.addWidget(self.add_files_button)
         layout.addWidget(self.start_button)
+        layout.addWidget(self.start_translate_button)
         layout.addWidget(self.stop_button)
         return header
 
@@ -579,9 +599,9 @@ class MainWindow(QMainWindow):
 
         self.empty_state = QWidget()
         self.empty_state.setObjectName("EmptyState")
-        self.empty_state.setMinimumHeight(44 + 58 * 4 + 16)
+        self.empty_state.setMinimumHeight(240)
         empty_layout = QVBoxLayout(self.empty_state)
-        empty_layout.setContentsMargins(0, 28, 0, 28)
+        empty_layout.setContentsMargins(0, 16, 0, 16)
         empty_layout.setSpacing(8)
         empty_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.empty_title_label = QLabel("还没有添加文件")
@@ -651,6 +671,7 @@ class MainWindow(QMainWindow):
         self.prepare_button(self.advanced_button)
         title_row.addWidget(self.settings_title_label)
         title_row.addStretch()
+        title_row.addWidget(self.translation_button)
         title_row.addWidget(self.advanced_button)
         layout.addLayout(title_row)
 
@@ -673,8 +694,14 @@ class MainWindow(QMainWindow):
         self.language_combo.setToolTip("默认自动识别；明确知道音频语言时可手动指定")
         self.prepare_combo(self.language_combo)
 
+        self.output_language_combo = QComboBox()
+        self.output_language_combo.setEditable(True)
+        self.output_language_combo.setMinimumWidth(140)
+        self.output_language_combo.setToolTip("点击“识别并翻译”时使用的字幕输出语言")
+        self.prepare_combo(self.output_language_combo)
+
         self.profile_combo = QComboBox()
-        self.profile_combo.setMinimumWidth(120)
+        self.profile_combo.setMinimumWidth(180)
         self.profile_combo.setToolTip("推荐适合大多数情况，低显存会使用更保守的参数")
         self.prepare_combo(self.profile_combo)
 
@@ -687,6 +714,7 @@ class MainWindow(QMainWindow):
 
         self.context_label = QLabel("上下文")
         self.recognition_language_label = QLabel("识别语言")
+        self.output_language_label = QLabel("输出语言")
         self.profile_label = QLabel("运行模式")
         self.model_size_label = QLabel("模型尺寸")
 
@@ -698,6 +726,8 @@ class MainWindow(QMainWindow):
         common.addWidget(self.profile_combo, 1, 3)
         common.addWidget(self.model_size_label, 1, 4)
         common.addWidget(self.model_size_combo, 1, 5)
+        common.addWidget(self.output_language_label, 2, 0)
+        common.addWidget(self.output_language_combo, 2, 1)
         layout.addLayout(common)
 
         self.advanced_dialog = self.build_advanced_settings_dialog()
@@ -951,6 +981,8 @@ class MainWindow(QMainWindow):
         self.empty_add_files_button.setToolTip(self.t("add_files"))
         self.start_button.setText(self.t("start"))
         self.start_button.setToolTip(self.t("start"))
+        self.start_translate_button.setText(self.t("start_translate"))
+        self.start_translate_button.setToolTip(self.t("start_translate_tooltip"))
         self.stop_button.setText(self.t("stop"))
         self.stop_button.setToolTip(self.t("stop"))
 
@@ -975,6 +1007,8 @@ class MainWindow(QMainWindow):
         self.context_edit.setToolTip(self.t("context_tooltip"))
         self.recognition_language_label.setText(self.t("recognition_language"))
         self.language_combo.setToolTip(self.t("recognition_language_tooltip"))
+        self.output_language_label.setText(self.t("output_language"))
+        self.output_language_combo.setToolTip(self.t("output_language_tooltip"))
         self.profile_label.setText(self.t("profile_label"))
         self.profile_combo.setToolTip(self.t("profile_tooltip"))
         self.model_size_label.setText(self.t("model_size"))
@@ -1028,6 +1062,7 @@ class MainWindow(QMainWindow):
         self.set_labeled_combo(self.device_combo, DEVICE_PRESETS, "auto")
         self.set_labeled_combo(self.chunk_seconds_combo, CHUNK_PRESETS, DEFAULT_CHUNK_SECONDS)
         self.set_labeled_combo(self.caption_preset_combo, CAPTION_PRESETS, (22, 44))
+        self.set_labeled_combo(self.output_language_combo, TRANSLATION_TARGET_PRESETS, "简体中文")
         self.set_labeled_combo(self.translation_target_combo, TRANSLATION_TARGET_PRESETS, "简体中文")
         self.set_labeled_combo(self.translation_model_mode_combo, TRANSLATION_MODEL_PRESETS, "quality")
 
@@ -1258,7 +1293,7 @@ class MainWindow(QMainWindow):
     def show_advanced_settings(self) -> None:
         self.exec_centered_dialog(self.advanced_dialog)
 
-    def options(self) -> GuiOptions:
+    def options(self, translate_after_asr: bool = False) -> GuiOptions:
         max_line_chars, max_caption_chars = self.caption_preset_combo.currentData()
         return GuiOptions(
             out_dir=None,
@@ -1275,9 +1310,13 @@ class MainWindow(QMainWindow):
             chunk_seconds=self.chunk_seconds_combo.currentData() or DEFAULT_CHUNK_SECONDS,
             overwrite=self.overwrite_check.isChecked(),
             local_files_only=self.local_only_check.isChecked(),
+            translate_after_asr=translate_after_asr,
+            translation_target_language=self.current_output_language(),
+            translation_model_mode="quality",
+            translation_max_new_tokens=2048,
         )
 
-    def start_processing(self) -> None:
+    def start_processing(self, translate_after_asr: bool = False) -> None:
         if self.is_running():
             return
         if not self.files:
@@ -1288,7 +1327,7 @@ class MainWindow(QMainWindow):
             )
             return
 
-        options = self.options()
+        options = self.options(translate_after_asr=translate_after_asr)
         diagnostics_output = options.out_dir or self.files[0].parent
         diagnostics = run_diagnostics(Path.cwd(), output_dir=diagnostics_output)
         blocked = blocking_messages(diagnostics)
@@ -1301,7 +1340,13 @@ class MainWindow(QMainWindow):
             return
 
         if not options.overwrite:
-            conflicts = output_conflicts(self.files, options.out_dir)
+            conflicts = output_conflicts(
+                self.files,
+                options.out_dir,
+                translation_target_language=(
+                    options.translation_target_language if options.translate_after_asr else None
+                ),
+            )
             if conflicts:
                 preview = "\n".join(f"  - {path}" for path in conflicts[:8])
                 if len(conflicts) > 8:
@@ -1318,7 +1363,7 @@ class MainWindow(QMainWindow):
         self.log_box.clear()
         self.full_log.clear()
         self.clear_log_button.setEnabled(False)
-        self.append_log("[START] 开始处理")
+        self.append_log("[START] 开始识别并翻译" if options.translate_after_asr else "[START] 开始处理")
 
         self.thread = QThread(self)
         self.worker = SubtitleWorker(list(self.files), options)
@@ -1426,10 +1471,16 @@ class MainWindow(QMainWindow):
             return self.t("progress_prepare_asr")
         if detail == "完成":
             return self.t("progress_done")
+        if detail == "识别完成":
+            return self.t("progress_asr_done")
+        if detail == "翻译字幕":
+            return self.t("progress_translate")
         if detail.startswith("提取音频 "):
             return self.t("progress_extract_audio", percent=detail.replace("提取音频 ", "").rstrip("%"))
         if detail.startswith("识别字幕 "):
             return self.t("progress_recognize", percent=detail.replace("识别字幕 ", "").rstrip("%"))
+        if detail.startswith("翻译字幕 "):
+            return self.t("progress_translate_percent", percent=detail.replace("翻译字幕 ", "").rstrip("%"))
         return detail
 
     def update_progress(self, percent: int, detail: str) -> None:
@@ -1477,7 +1528,9 @@ class MainWindow(QMainWindow):
         self.ui_running = running
         self.add_files_button.setEnabled(not running)
         self.empty_add_files_button.setEnabled(not running)
+        self.output_language_combo.setEnabled(not running)
         self.start_button.setVisible(not running)
+        self.start_translate_button.setVisible(not running)
         self.stop_button.setVisible(running)
         self.stop_button.setEnabled(running)
         self.progress_panel.hide()
@@ -1537,6 +1590,7 @@ class MainWindow(QMainWindow):
         self.empty_state.setVisible(not has_files)
         self.table.setVisible(has_files)
         self.start_button.setEnabled(has_files and not running)
+        self.start_translate_button.setEnabled(has_files and not running)
         self.update_queue_actions()
 
     def update_queue_actions(self) -> None:

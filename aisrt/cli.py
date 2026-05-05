@@ -24,6 +24,7 @@ from .local_asr import (
     transcribe_to_srt_text,
 )
 from .postprocess import postprocess_srt_text
+from .translate_cli import default_output_path
 from .user_messages import friendly_error_message
 
 
@@ -94,9 +95,26 @@ def collect_inputs(input_path: Path, recursive: bool) -> list[Path]:
     return files
 
 
-def ensure_outputs_can_be_written(media_path: Path, out_dir: Path, overwrite: bool) -> None:
+def output_target_paths(
+    media_path: Path,
+    out_dir: Path,
+    translation_target_language: str | None = None,
+) -> list[Path]:
     stem = media_path.stem
-    targets = [out_dir / f"{stem}.srt"]
+    final_srt = out_dir / f"{stem}.srt"
+    targets = [final_srt]
+    if translation_target_language:
+        targets.append(default_output_path(final_srt, translation_target_language))
+    return targets
+
+
+def ensure_outputs_can_be_written(
+    media_path: Path,
+    out_dir: Path,
+    overwrite: bool,
+    translation_target_language: str | None = None,
+) -> None:
+    targets = output_target_paths(media_path, out_dir, translation_target_language=translation_target_language)
     conflicts = [path for path in targets if path.exists()]
 
     if conflicts and not overwrite:

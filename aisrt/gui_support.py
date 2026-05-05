@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import re
 
-from .cli import MEDIA_EXTENSIONS
+from .cli import MEDIA_EXTENSIONS, output_target_paths
 
 
 AUDIO_PROGRESS_RE = re.compile(r"^\[AUDIO\]\s+(\d+)%")
@@ -27,6 +27,10 @@ class GuiOptions:
     chunk_seconds: int
     overwrite: bool
     local_files_only: bool
+    translate_after_asr: bool = False
+    translation_target_language: str = "简体中文"
+    translation_model_mode: str = "quality"
+    translation_max_new_tokens: int = 2048
 
 
 def collect_media_paths(paths: list[Path]) -> list[Path]:
@@ -51,13 +55,17 @@ def collect_media_paths(paths: list[Path]) -> list[Path]:
     return result
 
 
-def output_conflicts(files: list[Path], out_dir: Path | None) -> list[Path]:
+def output_conflicts(
+    files: list[Path],
+    out_dir: Path | None,
+    translation_target_language: str | None = None,
+) -> list[Path]:
     conflicts: list[Path] = []
     for media_path in files:
         target_dir = out_dir or media_path.parent
-        target = target_dir / f"{media_path.stem}.srt"
-        if target.exists():
-            conflicts.append(target)
+        for target in output_target_paths(media_path, target_dir, translation_target_language=translation_target_language):
+            if target.exists():
+                conflicts.append(target)
     return conflicts
 
 

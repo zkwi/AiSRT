@@ -133,7 +133,7 @@ def test_main_window_uses_native_styles_and_system_font():
     assert window.table.columnWidth(1) >= 200
     assert window.table.verticalHeader().defaultSectionSize() >= 64
     assert window.table.minimumHeight() >= 44 + 64 * 5
-    assert window.empty_state.minimumHeight() >= 44 + 58 * 4
+    assert window.empty_state.minimumHeight() >= 220
     assert window.table.focusPolicy() == Qt.FocusPolicy.NoFocus
     assert (
         QGuiApplication.highDpiScaleFactorRoundingPolicy()
@@ -241,7 +241,7 @@ def test_english_ui_has_no_untranslated_visible_copy(tmp_path):
 
     assert_no_simplified_or_traditional_chinese(widget_texts(window))
     assert window.language_combo.currentText() == "Auto"
-    assert window.profile_combo.currentText() == "Recommended"
+    assert window.profile_combo.currentText() == "Balanced"
     assert window.chunk_seconds_combo.itemText(0) == "Stable (30s)"
     assert window.caption_preset_combo.itemText(1) == "Recommended"
     assert window.progress_detail_text("模型加载失败") == "Model load failed"
@@ -273,6 +273,7 @@ def test_english_technical_log_localizes_known_worker_messages():
     window.append_log("[ASR] 4/52 开始 2.2-3.0 分钟")
     window.append_log("[ASR] 5/52 无时间戳，使用该识别块时间范围生成粗略字幕")
     window.append_log("[ASR] 6/52 无识别文本，跳过字幕生成")
+    window.append_log("[TRANSLATE] 1/2 完成，总进度 50%")
 
     log_text = window.log_box.toPlainText()
     assert "[INFO] Preparing models. First run may download models; time depends on network and disk speed." in log_text
@@ -282,6 +283,7 @@ def test_english_technical_log_localizes_known_worker_messages():
     assert "[ASR] 4/52 started: 2.2-3.0 min" in log_text
     assert "[ASR] 5/52 has no timestamps; using the chunk time range for rough subtitles" in log_text
     assert "[ASR] 6/52 has no recognized text; skipping subtitle generation" in log_text
+    assert "Translating subtitles: 50%" in log_text
     assert not HAN_RE.search(log_text)
 
     window.close()
@@ -383,6 +385,47 @@ def test_translation_dialog_handles_targets_and_progress_state(tmp_path):
     window.close()
 
 
+def test_main_window_exposes_one_click_recognize_and_translate(tmp_path):
+    window = MainWindow()
+
+    assert window.output_language_label.text() == "输出语言"
+    assert window.output_language_combo.currentData() == "简体中文"
+    assert "英语" in [window.output_language_combo.itemText(index) for index in range(window.output_language_combo.count())]
+    assert window.start_translate_button.text() == "识别并翻译"
+    assert window.start_translate_button.property("variant") == "secondary"
+    assert window.start_translate_button.icon().isNull()
+
+    media_path = tmp_path / "movie.mp4"
+    media_path.write_bytes(b"")
+    window.add_paths([media_path])
+    window.set_combo_data(window.output_language_combo, "Spanish")
+
+    asr_options = window.options()
+    assert not asr_options.translate_after_asr
+    translate_options = window.options(translate_after_asr=True)
+    assert translate_options.translate_after_asr
+    assert translate_options.translation_target_language == "Spanish"
+
+    window.output_language_combo.setCurrentText("Italian")
+    assert window.options(translate_after_asr=True).translation_target_language == "Italian"
+    window.ui_language_combo.setCurrentText("English")
+    assert window.output_language_combo.currentText() == "Italian"
+    assert window.options(translate_after_asr=True).translation_target_language == "Italian"
+    assert window.output_language_label.text() == "Output language"
+    assert window.start_translate_button.text() == "Recognize + Translate"
+
+    window.set_running(True)
+    assert window.start_button.isHidden()
+    assert window.start_translate_button.isHidden()
+    assert not window.stop_button.isHidden()
+
+    window.set_running(False)
+    assert not window.start_button.isHidden()
+    assert not window.start_translate_button.isHidden()
+
+    window.close()
+
+
 def test_low_frequency_actions_are_available_from_table_context_menu():
     window = MainWindow()
 
@@ -439,18 +482,25 @@ def test_primary_actions_are_simplified_and_contextual():
     assert "QPushButton#StopButton" in APP_QSS
     assert not window.start_button.isHidden()
     assert not window.start_button.isEnabled()
+    assert window.start_translate_button.text() == "识别并翻译"
+    assert window.start_translate_button.property("variant") == "secondary"
+    assert window.start_translate_button.icon().isNull()
+    assert not window.start_translate_button.isHidden()
+    assert not window.start_translate_button.isEnabled()
     assert window.stop_button.isHidden()
     assert window.progress_panel.isHidden()
     assert window.progress_panel.parent() is None
 
     window.set_running(True)
     assert window.start_button.isHidden()
+    assert window.start_translate_button.isHidden()
     assert not window.stop_button.isHidden()
     assert window.stop_button.isEnabled()
     assert window.progress_panel.isHidden()
 
     window.set_running(False)
     assert not window.start_button.isHidden()
+    assert not window.start_translate_button.isHidden()
     assert window.stop_button.isHidden()
     assert window.progress_panel.isHidden()
 
@@ -618,6 +668,7 @@ def test_empty_queue_guides_user_and_hides_blank_table(tmp_path):
     assert not window.empty_state.isHidden()
     assert window.table.isHidden()
     assert not window.start_button.isEnabled()
+    assert not window.start_translate_button.isEnabled()
     assert window.current_label.text() == "请先添加文件"
 
     window.close()

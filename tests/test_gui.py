@@ -20,6 +20,22 @@ def test_file_progress_from_ok_log():
     assert file_progress_from_log_message("[OK] movie.srt (Japanese)") == (100, "完成")
 
 
+def test_output_conflicts_includes_translated_subtitle(tmp_path):
+    from aisrt.gui_support import output_conflicts
+
+    media = tmp_path / "movie.mp4"
+    media.write_bytes(b"movie")
+    original = tmp_path / "movie.srt"
+    translated = tmp_path / "movie.zh.srt"
+    original.write_text("original", encoding="utf-8")
+    translated.write_text("translated", encoding="utf-8")
+
+    assert output_conflicts([media], None, translation_target_language="简体中文") == [
+        original,
+        translated,
+    ]
+
+
 def test_collect_media_paths_accepts_files_and_directories(tmp_path):
     movie = tmp_path / "movie.mp4"
     movie.write_bytes(b"movie")

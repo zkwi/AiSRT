@@ -103,9 +103,10 @@ If your CUDA or PyTorch environment is different, adjust `requirements-torch-cu1
 The GUI is designed for regular users and keeps only common actions on the main window:
 
 - Add files: select one or more video/audio files, or drag files into the window.
-- Start processing: generate subtitles for queued files.
+- Start processing: generate original ASR subtitles for queued files.
+- Recognize + Translate: generate original ASR subtitles, then output translated subtitles in the target language.
 - File queue: shows file name, status, progress, and subtitle directory.
-- Common settings: context, recognition language, run mode, and model size.
+- Common settings: context, recognition language, output language, run mode, and model size.
 - Advanced settings: device, audio chunk size, subtitle style, overwrite behavior, and local cache.
 - Run log: friendly messages by default; technical logs can be enabled when needed.
 - Translate subtitles: choose an existing SRT file and translate it locally into multiple target languages.
@@ -116,14 +117,14 @@ Default behavior:
 - Existing `.srt` files are not overwritten unless confirmed.
 - The UI supports Simplified Chinese, Traditional Chinese, and English.
 - The current run remembers the last media directory used for adding files.
-- Icons are reserved for the two primary actions: add files and start processing.
+- Icons are reserved for add files and start processing; recognize + translate, stop, and translate SRT stay text-only.
 
 Recommended settings:
 
 | Setting | Default | Recommendation |
 | --- | --- | --- |
 | Recognition language | Auto | Keep auto when unsure; specify the language when known. |
-| Run mode | Recommended | Switch to low-memory mode when GPU memory is tight. |
+| Run mode | Balanced | Switch to low-memory mode when GPU memory is tight. |
 | Model size | 1.7B | Use 1.7B for quality, 0.6B for speed or lower memory use. |
 | Audio chunks | Recommended, 45 seconds | Use conservative, 30 seconds, if recognition is unstable. |
 | Subtitle style | Recommended | Use short lines if each subtitle should be shorter. |
@@ -137,6 +138,13 @@ AISRT does not call third-party translation APIs and does not automatically uplo
 3. Choose quality or fast mode, then start translation.
 
 Only subtitle text is sent to the local HY-MT model; AISRT preserves and merges SRT numbering and timestamps in code. Quality mode uses the official HY-MT 1.8B model by default. Fast mode uses a lightweight quantized model for quick previews. Translation reuses the existing `.venv` PyTorch/CUDA stack, so users do not need to install another Python or CUDA environment.
+
+The main window's "Recognize + Translate" action is for one-step bilingual output from audio or video. For example, when recognition language is English and output language is Simplified Chinese, AISRT writes:
+
+```text
+movie.srt      # Original English subtitles from ASR
+movie.zh.srt   # Simplified Chinese subtitles from local translation
+```
 
 ## CLI
 
