@@ -218,7 +218,6 @@ class MainWindow(QMainWindow):
         self.enable_translation_check.toggled.connect(self.update_translation_controls)
         self.profile_combo.currentIndexChanged.connect(lambda _index: self.apply_profile())
         self.show_technical_log_check.toggled.connect(self.refresh_log_view)
-        self.clear_log_button.clicked.connect(self.clear_log)
         self.table.itemDoubleClicked.connect(lambda _item: self.open_output_folder())
 
         return root
@@ -391,7 +390,6 @@ class MainWindow(QMainWindow):
 
         self.log_box.clear()
         self.full_log.clear()
-        self.clear_log_button.setEnabled(False)
         self.translation_progress_bar.setValue(0)
         self.translation_feedback_label.setText(self.t("translation_loading"))
         self.append_log("[START] 开始翻译字幕")
@@ -681,7 +679,7 @@ class MainWindow(QMainWindow):
         self.advanced_button.setText("高级设置")
         self.advanced_button.setProperty("variant", "ghost")
         self.advanced_button.setCheckable(False)
-        self.advanced_button.setToolTip("设备、音频分块等不常改的选项")
+        self.advanced_button.setToolTip("设备、音频分块、覆盖输出和模型缓存等低频选项")
         self.advanced_button.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
         self.advanced_button.setArrowType(Qt.ArrowType.NoArrow)
         self.prepare_button(self.advanced_button)
@@ -760,7 +758,7 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(18, 18, 18, 18)
         layout.setSpacing(12)
 
-        self.translation_intro_label = QLabel("使用本地翻译模型处理已有 SRT 文件，复用当前 Python 和 CUDA 环境。")
+        self.translation_intro_label = QLabel("本地翻译已有 SRT 文件，不会上传字幕；首次加载翻译模型可能需要下载权重。")
         self.translation_intro_label.setObjectName("HintText")
         self.translation_intro_label.setWordWrap(True)
         layout.addWidget(self.translation_intro_label)
@@ -885,7 +883,7 @@ class MainWindow(QMainWindow):
         self.overwrite_check.setChecked(False)
         self.overwrite_check.setToolTip("未勾选时如字幕已存在，会在开始处理前询问是否覆盖")
         self.local_only_check = QCheckBox("只使用本地模型缓存")
-        self.local_only_check.setToolTip("勾选后不会下载缺失模型")
+        self.local_only_check.setToolTip("适合已提前下载模型的情况；勾选后缺失模型不会自动下载，可能导致加载失败")
 
         self.device_label = QLabel("设备")
         self.chunk_seconds_label = QLabel("音频分块")
@@ -962,22 +960,16 @@ class MainWindow(QMainWindow):
         header = QHBoxLayout()
         self.log_title_label = QLabel("运行日志")
         self.log_title_label.setObjectName("SectionTitle")
-        self.show_technical_log_check = QCheckBox("显示技术日志")
-        self.show_technical_log_check.setToolTip("默认只显示普通提示，勾选后查看完整技术日志")
-        self.clear_log_button = QPushButton("清空日志")
-        self.clear_log_button.setProperty("variant", "secondary")
-        self.clear_log_button.setToolTip("清空当前运行日志")
-        self.clear_log_button.setEnabled(False)
-        self.prepare_button(self.clear_log_button)
+        self.show_technical_log_check = QCheckBox("显示详细日志")
+        self.show_technical_log_check.setToolTip("默认只显示关键进度和问题提示；遇到问题时可勾选查看完整细节")
         header.addWidget(self.log_title_label)
         header.addStretch()
         header.addWidget(self.show_technical_log_check)
-        header.addWidget(self.clear_log_button)
         layout.addLayout(header)
 
         self.log_box = QPlainTextEdit()
         self.log_box.setReadOnly(True)
-        self.log_box.setPlaceholderText("处理日志会显示在这里。")
+        self.log_box.setPlaceholderText("处理进度、剩余时间和问题提示会显示在这里。")
         layout.addWidget(self.log_box)
         return panel
 
@@ -1066,8 +1058,6 @@ class MainWindow(QMainWindow):
         self.log_title_label.setText(self.t("log_title"))
         self.show_technical_log_check.setText(self.t("show_technical_log"))
         self.show_technical_log_check.setToolTip(self.t("show_technical_log_tooltip"))
-        self.clear_log_button.setText(self.t("clear_log"))
-        self.clear_log_button.setToolTip(self.t("clear_log_tooltip"))
         self.log_box.setPlaceholderText(self.t("log_placeholder"))
 
         self.set_labeled_combo(self.language_combo, LANGUAGE_PRESETS, DEFAULT_LANGUAGE)
@@ -1213,7 +1203,6 @@ class MainWindow(QMainWindow):
         self.set_status_icon("✓")
         self.log_box.clear()
         self.full_log.clear()
-        self.clear_log_button.setEnabled(False)
         self.update_file_count()
 
     def remove_selected_files(self) -> None:
@@ -1385,7 +1374,6 @@ class MainWindow(QMainWindow):
         self.set_status_icon("...", "processing")
         self.log_box.clear()
         self.full_log.clear()
-        self.clear_log_button.setEnabled(False)
         self.append_log("[START] 开始识别并翻译" if options.translate_after_asr else "[START] 开始处理")
 
         self.thread = QThread(self)
@@ -1403,7 +1391,6 @@ class MainWindow(QMainWindow):
 
     def append_log(self, message: str) -> None:
         self.full_log.append(message)
-        self.clear_log_button.setEnabled(True)
         shown = self.display_log_text(message)
         if not shown:
             return
@@ -1424,13 +1411,6 @@ class MainWindow(QMainWindow):
         if self.show_technical_log_check.isChecked():
             return technical_log_text(message, self.ui_language)
         return user_log_text(message, self.ui_language)
-
-    def clear_log(self) -> None:
-        if not self.full_log:
-            return
-        self.full_log.clear()
-        self.log_box.clear()
-        self.clear_log_button.setEnabled(False)
 
     def set_status_icon(self, text: str, state: str = "ready") -> None:
         self.status_icon_label.setText(text)

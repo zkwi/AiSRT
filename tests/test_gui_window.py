@@ -21,6 +21,7 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QSpinBox,
     QToolButton,
+    QWidget,
 )
 
 from aisrt.diagnostics import CheckResult
@@ -83,6 +84,23 @@ def widget_texts(window: MainWindow) -> list[str]:
 def assert_no_simplified_or_traditional_chinese(texts: list[str]) -> None:
     leftovers = sorted({text for text in texts if HAN_RE.search(text)})
     assert leftovers == []
+
+
+def assert_widget_fits_text(widget: QWidget) -> None:
+    if widget.isHidden():
+        return
+    text = widget.text() if hasattr(widget, "text") else ""
+    required_width = widget.fontMetrics().horizontalAdvance(text) + 18
+    if isinstance(widget, QCheckBox):
+        required_width = widget.sizeHint().width()
+    elif isinstance(widget, QPushButton) and not widget.icon().isNull():
+        required_width += widget.iconSize().width() + 8
+    assert widget.width() + 2 >= required_width, (
+        widget.objectName(),
+        text,
+        widget.width(),
+        required_width,
+    )
 
 
 def queue_status_text(window: MainWindow, row: int = 0) -> str:
@@ -176,7 +194,7 @@ def test_ui_language_switch_supports_simplified_traditional_and_english(tmp_path
     assert [
         window.ui_language_combo.itemData(index)
         for index in range(window.ui_language_combo.count())
-    ] == ["zh-Hans", "zh-Hant", "en"]
+    ] == ["zh-Hans", "zh-Hant", "en", "ja", "ko", "es"]
 
     window.language_combo.setCurrentText("英语")
     assert window.language_combo.currentData() == "English"
@@ -188,7 +206,7 @@ def test_ui_language_switch_supports_simplified_traditional_and_english(tmp_path
     assert window.add_files_button.text() == "Add Files"
     assert window.ui_language_label.text() == "UI language"
     assert "not recognition or translation languages" in window.ui_language_combo.toolTip()
-    assert window.translation_button.text() == "Translate Existing SRT"
+    assert window.translation_button.text() == "Translate SRT"
     assert window.start_button.text() == "Start"
     assert window.file_queue_title_label.text() == "File Queue"
     assert window.empty_title_label.text() == "No files added"
@@ -197,7 +215,9 @@ def test_ui_language_switch_supports_simplified_traditional_and_english(tmp_path
     assert window.recognition_language_label.text() == "Subtitle source language"
     assert window.advanced_dialog.windowTitle() == "Advanced Settings"
     assert window.translation_dialog.windowTitle() == "SRT Translation"
-    assert window.clear_log_button.text() == "Clear Log"
+    assert window.show_technical_log_check.text() == "Show detailed log"
+    assert "troubleshooting" in window.show_technical_log_check.toolTip()
+    assert not hasattr(window, "clear_log_button")
     assert window.current_label.text() == "Add files to begin"
     assert window.file_count_label.text() == "0 files"
     assert not hasattr(window, "context_edit")
@@ -240,9 +260,75 @@ def test_i18n_dictionaries_have_complete_keys():
     languages = [language for language, _label in UI_LANGUAGE_OPTIONS]
     reference = set(TEXT["zh-Hans"])
 
-    assert languages == ["zh-Hans", "zh-Hant", "en"]
+    assert languages == ["zh-Hans", "zh-Hant", "en", "ja", "ko", "es"]
     for language in languages:
         assert set(TEXT[language]) == reference
+
+
+def test_additional_ui_language_presets_localize_main_copy():
+    window = MainWindow()
+
+    window.ui_language_combo.setCurrentText("日本語")
+    assert window.ui_language_label.text() == "表示言語"
+    assert window.add_files_button.text() == "ファイルを追加"
+    assert window.show_technical_log_check.text() == "詳細ログを表示"
+    assert window.translation_button.text() == "既存 SRT を翻訳"
+    assert "フランス語" in [window.translation_target_combo.itemText(index) for index in range(window.translation_target_combo.count())]
+
+    window.ui_language_combo.setCurrentText("한국어")
+    assert window.ui_language_label.text() == "화면 언어"
+    assert window.start_button.text() == "시작"
+    assert window.file_queue_title_label.text() == "파일 대기열"
+    assert window.show_technical_log_check.text() == "상세 로그 표시"
+    assert window.translation_model_mode_combo.itemText(0) == "품질 우선"
+
+    window.ui_language_combo.setCurrentText("Español")
+    assert window.ui_language_label.text() == "Idioma de la interfaz"
+    assert window.add_files_button.text() == "Añadir"
+    assert window.start_button.text() == "Iniciar"
+    assert window.translation_dialog.windowTitle() == "Traducción SRT"
+    assert "Francés" in [window.translation_target_combo.itemText(index) for index in range(window.translation_target_combo.count())]
+
+    window.close()
+
+
+def test_ui_language_presets_keep_core_layout_stable():
+    window = MainWindow()
+    window.resize(window.minimumSize())
+    window.show()
+
+    media_path = Path.cwd() / "layout-smoke.mp4"
+    for language, _label in UI_LANGUAGE_OPTIONS:
+        window.set_combo_data(window.ui_language_combo, language)
+        QT_APP.processEvents()
+
+        for widget in [
+            window.add_files_button,
+            window.translation_button,
+            window.advanced_button,
+            window.start_button,
+            window.stop_button,
+            window.show_technical_log_check,
+            window.enable_translation_check,
+        ]:
+            assert_widget_fits_text(widget)
+
+        window.translation_source_edit.setText(str(media_path.with_suffix(".srt")))
+        window.refresh_translation_output_preview()
+        window.translation_dialog.adjustSize()
+        QT_APP.processEvents()
+
+        for widget in [
+            window.translation_browse_button,
+            window.translation_start_button,
+            window.translation_stop_button,
+        ]:
+            assert_widget_fits_text(widget)
+
+        assert window.translation_dialog.sizeHint().width() <= window.translation_dialog.maximumWidth()
+        assert window.translation_dialog.sizeHint().width() <= max(window.translation_dialog.minimumWidth(), 980)
+
+    window.close()
 
 
 def test_gui_language_presets_use_asr_translation_intersection():
@@ -299,20 +385,30 @@ def test_english_ui_has_no_untranslated_visible_copy(tmp_path):
     window.append_log("[START] 开始处理")
     window.append_log("[START] 开始识别并翻译")
     window.append_log("[START] 开始翻译字幕")
+    window.append_log("[INFO] 正在准备模型；首次运行会下载模型，耗时取决于网络和硬盘。")
+    window.append_log("[LOAD] Translate=AngelSlim/Hy-MT1.5-1.8B-1.25bit")
+    window.append_log("[ASR] 4/52 完成，用时 2.1s，总进度 8%，剩余 01:20")
+    window.append_log("[TRANSLATE] 1/2 完成，总进度 50%，剩余 00:30")
     window.append_log("[TRANSLATE OK] movie.zh.srt")
     window.append_log("[CANCEL] 已请求停止处理")
     window.append_log("[ERROR] 模型加载失败")
     window.append_log("[ERROR] movie.mp4: 显存不足。建议使用“低显存”运行模式，或切换到 0.6B 模型后重试。")
+    window.append_log("[ERROR] movie.mp4: 模型下载失败。请检查网络或 Hugging Face 访问是否可用；也可以提前下载模型后勾选“只使用本地模型缓存”。")
     window.append_log("[ERROR] movie.mp4: 翻译失败，已保留原始字幕: mock error")
 
     log_text = window.log_box.toPlainText()
     assert "Processing started." in log_text
     assert "Recognition and translation started." in log_text
     assert "Translation started." in log_text
+    assert "Preparing recognition models. First run may download model files" in log_text
+    assert "Loading translation model. First run may download model files." in log_text
+    assert "Recognizing subtitles: 8% (01:20 remaining)" in log_text
+    assert "Translating subtitles: 50% (00:30 remaining)" in log_text
     assert "Translation complete" in log_text
     assert "Cancelled: Stop requested" in log_text
     assert "Error: Model load failed" in log_text
     assert "movie.mp4: Not enough VRAM." in log_text
+    assert "movie.mp4: Model download failed." in log_text
     assert "movie.mp4: Translation failed; original subtitles kept: mock error" in log_text
     assert not HAN_RE.search(log_text)
 
@@ -394,6 +490,10 @@ def test_subtitle_translation_dialog_uses_local_hymt_flow(tmp_path):
     assert window.translation_start_button.icon().isNull()
     assert window.translation_stop_button.icon().isNull()
     assert window.translation_close_button.icon().isNull()
+    assert "不会上传字幕" in window.translation_intro_label.text()
+    assert "下载权重" in window.translation_intro_label.text()
+    assert "缺失模型不会自动下载" in window.local_only_check.toolTip()
+    assert "加载失败" in window.local_only_check.toolTip()
     assert "DeepSeek" not in window.translation_intro_label.text()
     assert not hasattr(window, "translation_prompt_box")
     window.translation_source_edit.setText(str(tmp_path / "movie.srt"))
@@ -401,11 +501,13 @@ def test_subtitle_translation_dialog_uses_local_hymt_flow(tmp_path):
     assert window.translation_output_edit.text().endswith("movie.es.srt")
 
     window.ui_language_combo.setCurrentText("English")
-    assert window.translation_button.text() == "Translate Existing SRT"
+    assert window.translation_button.text() == "Translate SRT"
     assert window.translation_browse_button.text() == "Choose SRT"
     assert window.translation_target_label.text() == "Translation language"
     assert window.translation_start_button.text() == "Start Translation"
     assert window.translation_model_mode_combo.itemText(0) == "Quality"
+    assert "without uploading subtitles" in window.translation_intro_label.text()
+    assert "loading may fail" in window.local_only_check.toolTip()
 
     window.close()
 
@@ -517,16 +619,12 @@ def test_low_frequency_actions_are_available_from_table_context_menu():
         if not action.isSeparator()
     )
     assert not hasattr(window, "queue_action_button")
-    assert window.clear_log_button.text() == "清空日志"
-    assert window.clear_log_button.icon().isNull()
-    assert not window.clear_log_button.isEnabled()
+    assert not hasattr(window, "clear_log_button")
+    assert not hasattr(window, "clear_log")
     assert not hasattr(window, "log_action_button")
 
     window.append_log("[START] 开始处理")
-    assert window.clear_log_button.isEnabled()
-    window.clear_log()
-    assert not window.clear_log_button.isEnabled()
-    assert window.log_box.toPlainText() == ""
+    assert window.log_box.toPlainText() == "开始处理。"
 
     window.close()
 
@@ -818,7 +916,11 @@ def test_technical_settings_open_in_advanced_dialog():
 def test_secondary_explanations_use_tooltips():
     window = MainWindow()
 
-    assert "完整技术日志" in window.show_technical_log_check.toolTip()
+    assert window.show_technical_log_check.text() == "显示详细日志"
+    assert "关键进度" in window.show_technical_log_check.toolTip()
+    assert "完整细节" in window.show_technical_log_check.toolTip()
+    assert "技术日志" not in window.show_technical_log_check.text()
+    assert "技术日志" not in window.show_technical_log_check.toolTip()
     assert "1.7B" in window.model_size_combo.toolTip()
     assert "0.6B" in window.model_size_combo.toolTip()
     assert "QMenu::item:selected" in APP_QSS
