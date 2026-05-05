@@ -111,6 +111,8 @@ def test_main_window_uses_native_styles_and_system_font():
     assert not load_svg_icon(AUDIO_ICON_PATH).isNull()
     assert not load_svg_icon(PLAY_ICON_PATH).isNull()
     assert not window.windowIcon().isNull()
+    assert window.minimumWidth() >= 1180
+    assert window.minimumHeight() >= 820
     assert window.logo_label.pixmap() is not None
     assert resolve_ui_font_family() in FONT_FAMILY_CANDIDATES
     assert QT_APP.font().family() == resolve_ui_font_family()
@@ -130,7 +132,7 @@ def test_main_window_uses_native_styles_and_system_font():
     assert window.table.horizontalHeader().defaultAlignment() & Qt.AlignmentFlag.AlignLeft
     assert window.table.horizontalHeader().minimumHeight() >= 44
     assert window.table.horizontalHeader().sectionResizeMode(1) == QHeaderView.ResizeMode.Fixed
-    assert window.table.columnWidth(1) >= 200
+    assert window.table.columnWidth(1) >= 300
     assert window.table.verticalHeader().defaultSectionSize() >= 64
     assert window.table.minimumHeight() >= 44 + 64 * 5
     assert window.empty_state.minimumHeight() >= 220
@@ -245,17 +247,20 @@ def test_english_ui_has_no_untranslated_visible_copy(tmp_path):
     assert window.chunk_seconds_combo.itemText(0) == "Stable (30s)"
     assert window.caption_preset_combo.itemText(1) == "Recommended"
     assert window.progress_detail_text("模型加载失败") == "Model load failed"
+    assert window.progress_detail_text("加载翻译模型") == "Loading translation model"
 
     window.append_log("[START] 开始处理")
     window.append_log("[CANCEL] 已请求停止处理")
     window.append_log("[ERROR] 模型加载失败")
     window.append_log("[ERROR] movie.mp4: 显存不足。建议使用“低显存”运行模式，或切换到 0.6B 模型后重试。")
+    window.append_log("[ERROR] movie.mp4: 翻译失败，已保留原始字幕: mock error")
 
     log_text = window.log_box.toPlainText()
     assert "Processing started." in log_text
     assert "Cancelled: Stop requested" in log_text
     assert "Error: Model load failed" in log_text
     assert "movie.mp4: Not enough VRAM." in log_text
+    assert "movie.mp4: Translation failed; original subtitles kept: mock error" in log_text
     assert not HAN_RE.search(log_text)
 
     window.close()
@@ -274,6 +279,7 @@ def test_english_technical_log_localizes_known_worker_messages():
     window.append_log("[ASR] 5/52 无时间戳，使用该识别块时间范围生成粗略字幕")
     window.append_log("[ASR] 6/52 无识别文本，跳过字幕生成")
     window.append_log("[TRANSLATE] 1/2 完成，总进度 50%")
+    window.append_log("[ERROR] movie.mp4: 翻译失败，已保留原始字幕: mock error")
 
     log_text = window.log_box.toPlainText()
     assert "[INFO] Preparing models. First run may download models; time depends on network and disk speed." in log_text
@@ -284,6 +290,7 @@ def test_english_technical_log_localizes_known_worker_messages():
     assert "[ASR] 5/52 has no timestamps; using the chunk time range for rough subtitles" in log_text
     assert "[ASR] 6/52 has no recognized text; skipping subtitle generation" in log_text
     assert "Translating subtitles: 50%" in log_text
+    assert "movie.mp4: Translation failed; original subtitles kept: mock error" in log_text
     assert not HAN_RE.search(log_text)
 
     window.close()
@@ -785,6 +792,10 @@ def test_queue_actions_follow_file_statuses(tmp_path):
 
     window.update_file_status(0, "失败，详见日志", str(tmp_path))
     assert window.retry_failed_action.isEnabled()
+
+    window.update_file_status(0, "翻译失败，已保留原字幕", str(tmp_path))
+    assert window.retry_failed_action.isEnabled()
+    assert window.table.item(0, 1).toolTip() == "翻译失败，已保留原字幕"
 
     window.set_running(True)
     assert not window.open_folder_action.isEnabled()

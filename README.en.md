@@ -146,6 +146,8 @@ movie.srt      # Original English subtitles from ASR
 movie.zh.srt   # Simplified Chinese subtitles from local translation
 ```
 
+The one-step flow writes the original ASR subtitles before loading the translation model. If the translation model is missing or translation fails, the original subtitles stay in place, the queue shows "Translation failed, original kept", and the failed item can be retried after the model is ready.
+
 ## CLI
 
 Process one file:

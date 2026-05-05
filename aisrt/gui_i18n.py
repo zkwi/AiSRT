@@ -130,6 +130,7 @@ TEXT: dict[str, dict[str, str]] = {
         "translation_stopping": "正在停止翻译",
         "translation_done": "翻译完成",
         "translation_failed": "翻译失败：{message}",
+        "log_translation_failed_kept_original": "翻译失败，已保留原始字幕",
         "translation_select_srt_title": "选择 SRT 文件",
         "translation_missing_source_title": "缺少 SRT 文件",
         "translation_missing_source_body": "请先选择要翻译的 SRT 文件。",
@@ -150,6 +151,7 @@ TEXT: dict[str, dict[str, str]] = {
         "file_status_processing": "处理中",
         "file_status_done": "完成",
         "file_status_failed": "失败，详见日志",
+        "file_status_translation_failed": "翻译失败，已保留原字幕",
         "file_status_cancelled": "已取消",
         "file_status_model_failed": "模型加载失败",
         "asr_auto": "自动识别",
@@ -191,6 +193,7 @@ TEXT: dict[str, dict[str, str]] = {
         "progress_prepare_asr": "准备识别",
         "progress_done": "完成",
         "progress_asr_done": "识别完成",
+        "progress_load_translate_model": "加载翻译模型",
         "progress_translate": "翻译字幕",
         "progress_extract_audio": "提取音频 {percent}%",
         "progress_recognize": "识别字幕 {percent}%",
@@ -320,6 +323,7 @@ TEXT: dict[str, dict[str, str]] = {
         "translation_stopping": "正在停止翻譯",
         "translation_done": "翻譯完成",
         "translation_failed": "翻譯失敗：{message}",
+        "log_translation_failed_kept_original": "翻譯失敗，已保留原始字幕",
         "translation_select_srt_title": "選擇 SRT 檔案",
         "translation_missing_source_title": "缺少 SRT 檔案",
         "translation_missing_source_body": "請先選擇要翻譯的 SRT 檔案。",
@@ -340,6 +344,7 @@ TEXT: dict[str, dict[str, str]] = {
         "file_status_processing": "處理中",
         "file_status_done": "完成",
         "file_status_failed": "失敗，詳見日誌",
+        "file_status_translation_failed": "翻譯失敗，已保留原字幕",
         "file_status_cancelled": "已取消",
         "file_status_model_failed": "模型載入失敗",
         "asr_auto": "自動辨識",
@@ -381,6 +386,7 @@ TEXT: dict[str, dict[str, str]] = {
         "progress_prepare_asr": "準備辨識",
         "progress_done": "完成",
         "progress_asr_done": "辨識完成",
+        "progress_load_translate_model": "載入翻譯模型",
         "progress_translate": "翻譯字幕",
         "progress_extract_audio": "提取音訊 {percent}%",
         "progress_recognize": "辨識字幕 {percent}%",
@@ -510,6 +516,7 @@ TEXT: dict[str, dict[str, str]] = {
         "translation_stopping": "Stopping translation",
         "translation_done": "Translation complete",
         "translation_failed": "Translation failed: {message}",
+        "log_translation_failed_kept_original": "Translation failed; original subtitles kept",
         "translation_select_srt_title": "Choose SRT File",
         "translation_missing_source_title": "Missing SRT file",
         "translation_missing_source_body": "Choose the SRT file to translate first.",
@@ -530,6 +537,7 @@ TEXT: dict[str, dict[str, str]] = {
         "file_status_processing": "Processing",
         "file_status_done": "Done",
         "file_status_failed": "Failed, see log",
+        "file_status_translation_failed": "Translation failed, original kept",
         "file_status_cancelled": "Cancelled",
         "file_status_model_failed": "Model load failed",
         "asr_auto": "Auto",
@@ -571,6 +579,7 @@ TEXT: dict[str, dict[str, str]] = {
         "progress_prepare_asr": "Preparing recognition",
         "progress_done": "Done",
         "progress_asr_done": "Recognition complete",
+        "progress_load_translate_model": "Loading translation model",
         "progress_translate": "Translating subtitles",
         "progress_extract_audio": "Extracting audio {percent}%",
         "progress_recognize": "Recognizing subtitles {percent}%",
@@ -817,13 +826,19 @@ def _localized_log_detail(detail: str, language: str) -> str:
         if localized_tail != tail:
             if prefix == "模型加载失败":
                 prefix = tr(language, "progress_model_failed")
+            elif prefix == "翻译失败，已保留原始字幕":
+                prefix = tr(language, "log_translation_failed_kept_original")
             return f"{prefix}: {localized_tail}"
+        if prefix == "翻译失败，已保留原始字幕":
+            return f"{tr(language, 'log_translation_failed_kept_original')}: {localized_tail}"
     if detail == "已请求停止处理":
         return tr(language, "log_stop_requested")
     if detail == "模型加载失败":
         return tr(language, "progress_model_failed")
     if detail.startswith("模型加载失败:"):
         return detail.replace("模型加载失败", tr(language, "progress_model_failed"), 1)
+    if detail == "翻译失败，已保留原始字幕":
+        return tr(language, "log_translation_failed_kept_original")
     localized = ERROR_DETAIL_TEXT.get(detail, {}).get(language)
     if localized:
         return localized

@@ -6,6 +6,8 @@ This project follows a simple changelog style for now: group user-visible change
 
 ## Unreleased
 
+- Improved the GUI one-step recognize-and-translate flow so original ASR subtitles are kept when local translation loading or translation fails.
+
 ## 0.1.1 - 2026-05-01
 
 - Added GitHub community files, issue and pull request templates, lightweight CI and Dependabot configuration.

@@ -169,7 +169,7 @@ class MainWindow(QMainWindow):
             if app is not None:
                 app.setWindowIcon(self.app_icon)
         self.resize(1180, 820)
-        self.setMinimumSize(960, 680)
+        self.setMinimumSize(1180, 820)
         self.setAcceptDrops(True)
         self.setCentralWidget(self.build_ui())
         self.apply_style()
@@ -476,7 +476,7 @@ class MainWindow(QMainWindow):
     def status_icon_for_key(self, key: str) -> QIcon:
         if key == "file_status_done":
             return self.standard_icon(QStyle.StandardPixmap.SP_DialogApplyButton)
-        if key in {"file_status_failed", "file_status_model_failed"}:
+        if key in {"file_status_failed", "file_status_model_failed", "file_status_translation_failed"}:
             return self.standard_icon(QStyle.StandardPixmap.SP_MessageBoxWarning)
         if key == "file_status_cancelled":
             return self.standard_icon(QStyle.StandardPixmap.SP_DialogCancelButton)
@@ -625,7 +625,7 @@ class MainWindow(QMainWindow):
         self.table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeMode.Stretch)
         self.table.horizontalHeader().setDefaultAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         self.table.horizontalHeader().setMinimumHeight(44)
-        self.table.setColumnWidth(1, 220)
+        self.table.setColumnWidth(1, 320)
         self.table.verticalHeader().setVisible(False)
         self.table.verticalHeader().setDefaultSectionSize(64)
         self.table.setMinimumHeight(44 + 64 * 5 + 18)
@@ -1151,6 +1151,12 @@ class MainWindow(QMainWindow):
     def status_key_from_text(self, status: str) -> str:
         if "模型加载失败" in status or "Model load failed" in status or "模型載入失敗" in status:
             return "file_status_model_failed"
+        if (
+            "翻译失败" in status
+            or "翻譯失敗" in status
+            or "Translation failed" in status
+        ):
+            return "file_status_translation_failed"
         if "完成" in status or status == "Done":
             return "file_status_done"
         if "失败" in status or "失敗" in status or "Failed" in status:
@@ -1226,10 +1232,11 @@ class MainWindow(QMainWindow):
     def retry_failed_files(self) -> None:
         if self.is_running():
             return
+        failed_statuses = {"file_status_failed", "file_status_model_failed", "file_status_translation_failed"}
         failed_rows = [
             row
             for row in range(self.table.rowCount())
-            if self.row_status_key(row) in {"file_status_failed", "file_status_model_failed"}
+            if self.row_status_key(row) in failed_statuses
         ]
         if not failed_rows:
             self.show_message(
@@ -1475,6 +1482,8 @@ class MainWindow(QMainWindow):
             return self.t("progress_asr_done")
         if detail == "翻译字幕":
             return self.t("progress_translate")
+        if detail == "加载翻译模型":
+            return self.t("progress_load_translate_model")
         if detail.startswith("提取音频 "):
             return self.t("progress_extract_audio", percent=detail.replace("提取音频 ", "").rstrip("%"))
         if detail.startswith("识别字幕 "):
@@ -1498,7 +1507,10 @@ class MainWindow(QMainWindow):
         self.worker = None
         status_keys = [self.row_status_key(row) for row in range(self.table.rowCount())]
         success = sum(key == "file_status_done" for key in status_keys)
-        failed = sum(key in {"file_status_failed", "file_status_model_failed"} for key in status_keys)
+        failed = sum(
+            key in {"file_status_failed", "file_status_model_failed", "file_status_translation_failed"}
+            for key in status_keys
+        )
         cancelled = sum(key == "file_status_cancelled" for key in status_keys)
         if cancelled:
             self.set_status_text(
@@ -1606,7 +1618,10 @@ class MainWindow(QMainWindow):
         )
         self.retry_failed_action.setEnabled(
             has_files
-            and any(status in {"file_status_failed", "file_status_model_failed"} for status in statuses)
+            and any(
+                status in {"file_status_failed", "file_status_model_failed", "file_status_translation_failed"}
+                for status in statuses
+            )
             and not running
         )
 

@@ -59,19 +59,6 @@ class SubtitleWorker(QObject):
                 local_files_only=self.options.local_files_only,
             )
             translator = None
-            if self.options.translate_after_asr:
-                translation_model = resolve_translation_model(self.options.translation_model_mode)
-                self.log.emit(f"[LOAD] Translate={translation_model}")
-                translation_runtime = load_translation_model(
-                    model_id=translation_model,
-                    device=self.options.device,
-                    dtype=self.options.dtype,
-                    local_files_only=self.options.local_files_only,
-                )
-                translator = make_model_translator(
-                    translation_runtime,
-                    max_new_tokens=self.options.translation_max_new_tokens,
-                )
         except Exception as exc:
             self.log.emit(f"[ERROR] 模型加载失败: {friendly_error_message(exc)}")
             for index, media_path in enumerate(self.files):
@@ -129,40 +116,66 @@ class SubtitleWorker(QObject):
                     progress=report,
                     should_stop=self.should_stop,
                 )
+                translation_failed = False
                 if self.options.translate_after_asr:
-                    if translator is None:
-                        raise RuntimeError("翻译模型未加载。")
                     translated_srt = default_output_path(final_srt, self.options.translation_target_language)
-                    ensure_output_can_be_written(translated_srt, overwrite=self.options.overwrite)
-                    self.progress.emit(
-                        int(((index + 0.9) / total) * 100),
-                        f"{media_path.name} - 翻译字幕",
-                    )
+                    try:
+                        ensure_output_can_be_written(translated_srt, overwrite=self.options.overwrite)
+                        if translator is None:
+                            translation_model = resolve_translation_model(self.options.translation_model_mode)
+                            self.log.emit(f"[LOAD] Translate={translation_model}")
+                            self.progress.emit(
+                                int(((index + 0.9) / total) * 100),
+                                f"{media_path.name} - 加载翻译模型",
+                            )
+                            translation_runtime = load_translation_model(
+                                model_id=translation_model,
+                                device=self.options.device,
+                                dtype=self.options.dtype,
+                                local_files_only=self.options.local_files_only,
+                            )
+                            translator = make_model_translator(
+                                translation_runtime,
+                                max_new_tokens=self.options.translation_max_new_tokens,
+                            )
+                        self.progress.emit(
+                            int(((index + 0.9) / total) * 100),
+                            f"{media_path.name} - 翻译字幕",
+                        )
 
-                    def translate_report(message: str) -> None:
-                        self.log.emit(message)
-                        match = TRANSLATE_PROGRESS_RE.search(message)
-                        if not match:
-                            return
-                        translate_percent = min(100, int(match.group(1)))
-                        file_percent = 90 + round(translate_percent * 0.1)
-                        overall = int(((index + file_percent / 100) / total) * 100)
-                        self.progress.emit(overall, f"{media_path.name} - 翻译字幕 {translate_percent}%")
+                        def translate_report(message: str) -> None:
+                            self.log.emit(message)
+                            match = TRANSLATE_PROGRESS_RE.search(message)
+                            if not match:
+                                return
+                            translate_percent = min(100, int(match.group(1)))
+                            file_percent = 90 + round(translate_percent * 0.1)
+                            overall = int(((index + file_percent / 100) / total) * 100)
+                            self.progress.emit(overall, f"{media_path.name} - 翻译字幕 {translate_percent}%")
 
-                    translated = translate_srt_text(
-                        final_srt.read_text(encoding="utf-8-sig"),
-                        target_language=self.options.translation_target_language,
-                        translator=translator,
-                        chunk_size=50,
-                        context_size=5,
-                        progress=translate_report,
-                        should_stop=self.should_stop,
-                    )
-                    if self.should_stop():
-                        raise ProcessingCancelled("用户已取消处理。")
-                    translated_srt.write_text(translated, encoding="utf-8")
-                    self.log.emit(f"[OK] {translated_srt}")
-                self.file_status.emit(index, "完成", str(final_srt.parent))
+                        translated = translate_srt_text(
+                            final_srt.read_text(encoding="utf-8-sig"),
+                            target_language=self.options.translation_target_language,
+                            translator=translator,
+                            chunk_size=50,
+                            context_size=5,
+                            progress=translate_report,
+                            should_stop=self.should_stop,
+                        )
+                        if self.should_stop():
+                            raise ProcessingCancelled("用户已取消处理。")
+                        translated_srt.write_text(translated, encoding="utf-8")
+                        self.log.emit(f"[OK] {translated_srt}")
+                    except ProcessingCancelled:
+                        raise
+                    except Exception as exc:
+                        translation_failed = True
+                        self.log.emit(
+                            f"[ERROR] {media_path.name}: 翻译失败，已保留原始字幕: {friendly_error_message(exc)}"
+                        )
+                        self.file_status.emit(index, "翻译失败，已保留原字幕", str(final_srt.parent))
+                if not translation_failed:
+                    self.file_status.emit(index, "完成", str(final_srt.parent))
             except ProcessingCancelled as exc:
                 self.log.emit(f"[CANCEL] {exc}")
                 self.file_status.emit(index, "已取消", str(out_dir))
