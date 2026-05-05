@@ -19,7 +19,7 @@ The project is intentionally scoped as a personal desktop and command-line tool.
 | Local inference | Runs models locally by default. It does not call DashScope APIs or depend on `qwen3-asr-toolkit`. |
 | Batch processing | The GUI supports a multi-file queue; the CLI supports single-file and directory batch processing. |
 | Subtitle post-processing | Deduplicates text, fixes overlapping timestamps, wraps long lines, cleans CJK spacing, and renumbers subtitles. |
-| SRT translation guide | Does not integrate a translation service; it only provides a manual workflow for using DeepSeek Chat with SRT files. |
+| Local SRT translation | Translates existing SRT files with local HY-MT models, supports multiple target languages, and preserves numbering and timestamps. |
 
 > Note: Public project naming uses AISRT. Qwen3-ASR and Qwen3-ForcedAligner appear only as model IDs and technical dependencies.
 
@@ -35,7 +35,7 @@ AISRT is suitable for:
 AISRT is not suitable for:
 
 - Online subtitle services, multi-user backends, or web applications.
-- Workflows that require automatic cloud translation APIs or automatic subtitle upload.
+- Workflows that require cloud translation APIs, online collaboration, or automatic subtitle upload.
 - Environments without FFmpeg, enough disk space, or access to model downloads.
 - Fast long-video processing on CPU-only machines.
 
@@ -108,7 +108,7 @@ The GUI is designed for regular users and keeps only common actions on the main 
 - Common settings: context, recognition language, run mode, and model size.
 - Advanced settings: device, audio chunk size, subtitle style, overwrite behavior, and local cache.
 - Run log: friendly messages by default; technical logs can be enabled when needed.
-- Translate subtitles: opens a guide page for manually uploading SRT files to DeepSeek Chat and copying a preset prompt.
+- Translate subtitles: choose an existing SRT file and translate it locally into multiple target languages.
 
 Default behavior:
 
@@ -130,13 +130,13 @@ Recommended settings:
 
 ## SRT Translation
 
-AISRT does not embed third-party translation services and does not automatically upload subtitle files. The GUI's "Translate subtitles" action only provides a separate guide page for a manual workflow:
+AISRT does not call third-party translation APIs and does not automatically upload subtitle files. The GUI's "Translate subtitles" action opens a local translation dialog:
 
-1. Open DeepSeek Chat.
-2. Drag the generated `.srt` file into the web chat.
-3. Click "Copy prompt" in AISRT and paste the preset prompt into DeepSeek.
+1. Choose an existing `.srt` file.
+2. Choose a target language from common presets, or type another language.
+3. Choose quality or fast mode, then start translation.
 
-The preset prompt asks the model to preserve SRT numbering, timestamps, segments, and line breaks, translate only subtitle text, and output only the translated SRT.
+Only subtitle text is sent to the local HY-MT model; AISRT preserves and merges SRT numbering and timestamps in code. Quality mode uses the official HY-MT 1.8B model by default. Fast mode uses a lightweight quantized model for quick previews. Translation reuses the existing `.venv` PyTorch/CUDA stack, so users do not need to install another Python or CUDA environment.
 
 ## CLI
 
@@ -156,6 +156,18 @@ Batch-process a directory:
 
 ```powershell
 ai-sub ".\media" -o ".\subtitles" --recursive --overwrite
+```
+
+Translate an existing SRT file:
+
+```powershell
+ai-sub-translate "sample.srt" --to English --overwrite
+```
+
+Use the fast lightweight translation model:
+
+```powershell
+ai-sub-translate "sample.srt" --to Spanish --model-mode fast --overwrite
 ```
 
 Use locally downloaded models:
@@ -278,6 +290,9 @@ aisrt/
   gui_i18n.py      GUI multilingual text and log localization
   gui_theme.py     GUI QSS styling
   local_asr.py     Local ASR calls, chunked recognition, timestamp cleanup
+  local_translate.py Local SRT translation, chunking, and merge logic
+  translate_cli.py  SRT translation CLI entry point
+  translate_worker.py GUI translation background worker
   postprocess.py   SRT parsing, cleanup, deduplication, wrapping, timeline fixes
   diagnostics.py   Local environment checks
 tests/             Unit tests and GUI offscreen tests

@@ -19,7 +19,7 @@
 | 本地推理 | 默认在本机运行模型，不调用 DashScope API，不依赖 `qwen3-asr-toolkit`。 |
 | 批量处理 | GUI 支持多文件队列；CLI 支持单文件和目录批处理。 |
 | 字幕后处理 | 自动去重、修复时间重叠、整理长行、清理 CJK 空格并重新编号。 |
-| SRT 翻译指引 | 不内置翻译服务，只提供外部 DeepSeek Chat 手动翻译 SRT 的操作指引。 |
+| 本地 SRT 翻译 | 使用本地 HY-MT 翻译已有 SRT，支持多目标语言，并保留原编号和时间轴。 |
 
 > 说明：项目公开名称不使用模型厂商商标；Qwen3-ASR 与 Qwen3-ForcedAligner 只作为模型 ID 和技术依赖出现。
 
@@ -35,7 +35,7 @@
 不适合：
 
 - 在线字幕服务、多人协作后台或 Web 应用。
-- 需要云端 API 自动翻译或自动上传字幕文件的场景。
+- 必须使用云端翻译 API、在线协作或自动上传字幕文件的场景。
 - 没有 FFmpeg、磁盘空间或可用模型下载渠道的环境。
 - 希望在 CPU 上快速处理长视频的场景。
 
@@ -108,7 +108,7 @@ GUI 面向普通用户，主界面只保留高频操作：
 - 常用设置：上下文、识别语言、运行模式、模型尺寸。
 - 高级设置：设备、音频分块、字幕样式、覆盖输出、本地缓存。
 - 运行日志：默认显示友好提示；勾选“显示技术日志”后显示更完整的底层日志。
-- 翻译字幕：打开说明页，引导用户手动前往 DeepSeek Chat 上传 SRT 并复制预设提示词。
+- 翻译字幕：选择已有 SRT 文件，使用本地翻译模型输出多语言字幕。
 
 默认行为：
 
@@ -130,13 +130,13 @@ GUI 面向普通用户，主界面只保留高频操作：
 
 ## SRT 字幕翻译
 
-软件不内置第三方翻译服务，也不会自动上传字幕文件。主界面的“翻译字幕”按钮只提供一个独立指引页，帮助你手动完成：
+软件不调用第三方翻译 API，也不会自动上传字幕文件。主界面的“翻译字幕”按钮会打开本地翻译窗口：
 
-1. 打开 DeepSeek Chat。
-2. 将生成的 `.srt` 文件拖入网页对话框。
-3. 点击“复制提示词”，把预设提示词粘贴到 DeepSeek。
+1. 选择已有 `.srt` 文件。
+2. 选择目标语言，常用语言可直接点选，也可以手动输入其他语言。
+3. 选择质量优先或快速轻量模式，开始翻译。
 
-预设提示词会要求保留 SRT 编号、时间轴、分段和换行结构，只翻译字幕正文，并且只输出翻译后的 SRT 内容。
+翻译逻辑只把字幕正文发给本地 HY-MT 模型，SRT 编号和时间轴由程序保留并合并。默认质量模式使用官方 HY-MT 1.8B 模型；快速模式使用轻量量化模型，适合先快速预览。翻译模型复用当前 `.venv` 中的 PyTorch/CUDA 环境，不需要用户额外安装另一套 Python 或 CUDA。
 
 ## 命令行
 
@@ -156,6 +156,18 @@ ai-sub "movie.mp4" --model-size 0.6B --overwrite
 
 ```powershell
 ai-sub ".\media" -o ".\subtitles" --recursive --overwrite
+```
+
+翻译已有 SRT：
+
+```powershell
+ai-sub-translate "sample.srt" --to 简体中文 --overwrite
+```
+
+使用快速轻量翻译模型：
+
+```powershell
+ai-sub-translate "sample.srt" --to English --model-mode fast --overwrite
 ```
 
 使用本地已下载模型：
@@ -278,6 +290,9 @@ aisrt/
   gui_i18n.py      GUI 多语言文案和日志本地化
   gui_theme.py     GUI QSS 样式
   local_asr.py     本地 ASR 调用、分块识别、时间戳整理
+  local_translate.py 本地 SRT 翻译、分段和译文合并
+  translate_cli.py  SRT 翻译命令行入口
+  translate_worker.py GUI 翻译后台线程
   postprocess.py   SRT 解析、清洗、去重、断行和时间轴修复
   diagnostics.py   本地环境检查
 tests/             单元测试和 GUI offscreen 测试

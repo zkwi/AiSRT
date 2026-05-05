@@ -12,7 +12,6 @@ from .gui_i18n import DEFAULT_UI_LANGUAGE, tr
 APP_FONT_POINT_SIZE = 12
 APP_DISPLAY_NAME = tr(DEFAULT_UI_LANGUAGE, "product_name")
 APP_PRODUCT_SUBTITLE = tr(DEFAULT_UI_LANGUAGE, "product_subtitle")
-DEEPSEEK_CHAT_URL = "https://chat.deepseek.com/"
 
 APP_ICON_PATH = Path(__file__).with_name("assets") / "app.svg"
 FILE_ICON_PATH = Path(__file__).with_name("assets") / "file-yellow.svg"

@@ -30,7 +30,6 @@ from aisrt.gui import (
     APP_FONT_POINT_SIZE,
     APP_ICON_PATH,
     APP_PRODUCT_SUBTITLE,
-    DEEPSEEK_CHAT_URL,
     FILE_ICON_PATH,
     FONT_FAMILY_CANDIDATES,
     MainWindow,
@@ -308,39 +307,78 @@ def test_diagnostics_messages_are_localized_for_ui():
     assert "沒有偵測到 CUDA" in traditional
 
 
-def test_subtitle_translation_dialog_guides_deepseek_flow():
+def test_subtitle_translation_dialog_uses_local_hymt_flow(tmp_path):
     window = MainWindow()
 
-    assert DEEPSEEK_CHAT_URL == "https://chat.deepseek.com/"
     assert window.translation_button.text() == "翻译字幕"
     assert window.translation_button.property("variant") == "secondary"
     assert window.translation_dialog.isModal()
     assert window.translation_dialog.minimumWidth() >= 820
-    assert window.open_deepseek_button.text() == "打开 DeepSeek 官网"
-    assert window.copy_prompt_button.text() == "复制提示词"
+    assert window.translation_source_label.text() == "SRT 文件"
+    assert window.translation_browse_button.text() == "选择 SRT"
+    assert window.translation_output_label.text() == "输出文件"
+    assert window.translation_target_label.text() == "目标语言"
+    assert window.translation_target_combo.isEditable()
+    assert window.translation_target_combo.currentData() == "简体中文"
+    assert "英语" in [window.translation_target_combo.itemText(index) for index in range(window.translation_target_combo.count())]
+    assert window.translation_model_mode_combo.currentData() == "quality"
+    assert window.translation_start_button.text() == "开始翻译"
+    assert window.translation_stop_button.text() == "停止"
+    assert not window.translation_stop_button.isEnabled()
     assert window.translation_button.icon().isNull()
-    assert window.open_deepseek_button.icon().isNull()
-    assert window.copy_prompt_button.icon().isNull()
+    assert window.translation_browse_button.icon().isNull()
+    assert window.translation_start_button.icon().isNull()
+    assert window.translation_stop_button.icon().isNull()
     assert window.translation_close_button.icon().isNull()
-    assert "将生成的 SRT 文件拖入" in window.translation_step_upload_label.text()
-
-    prompt = window.translation_prompt_text()
-    assert "目标语言：简体中文" in prompt
-    assert "保留 SRT 编号和时间轴" in prompt
-    assert "只输出翻译后的 SRT 内容" in prompt
-    assert window.translation_prompt_box.toPlainText() == prompt
-
-    window.copy_translation_prompt()
-    assert QT_APP.clipboard().text() == prompt
-    assert window.copy_prompt_button.text() == "提示词已复制"
-    assert window.translation_feedback_label.text() == "提示词已复制"
+    assert "DeepSeek" not in window.translation_intro_label.text()
+    assert not hasattr(window, "translation_prompt_box")
+    window.translation_source_edit.setText(str(tmp_path / "movie.srt"))
+    window.set_combo_data(window.translation_target_combo, "Spanish")
+    assert window.translation_output_edit.text().endswith("movie.es.srt")
 
     window.ui_language_combo.setCurrentText("English")
     assert window.translation_button.text() == "Translate SRT"
-    assert window.open_deepseek_button.text() == "Open DeepSeek"
-    assert window.copy_prompt_button.text() == "Prompt copied"
-    assert "Preserve SRT numbering" in window.translation_prompt_text()
-    assert not HAN_RE.search(window.translation_prompt_box.toPlainText())
+    assert window.translation_browse_button.text() == "Choose SRT"
+    assert window.translation_target_label.text() == "Target language"
+    assert window.translation_start_button.text() == "Start Translation"
+    assert window.translation_model_mode_combo.itemText(0) == "Quality"
+
+    window.close()
+
+
+def test_translation_dialog_handles_targets_and_progress_state(tmp_path):
+    window = MainWindow()
+    source = tmp_path / "movie.srt"
+    source.write_text("1\n00:00:00,000 --> 00:00:01,000\nHello.\n", encoding="utf-8")
+
+    window.translation_source_edit.setText(str(source))
+    for target, suffix in [("English", "en"), ("Spanish", "es"), ("Japanese", "ja")]:
+        window.set_combo_data(window.translation_target_combo, target)
+        window.refresh_translation_output_preview()
+        assert window.current_translation_target() == target
+        assert window.translation_output_edit.text().endswith(f"movie.{suffix}.srt")
+
+    window.translation_target_combo.setEditText("Klingon")
+    window.refresh_translation_output_preview()
+    assert window.current_translation_target() == "Klingon"
+    assert window.translation_output_edit.text().endswith("movie.klingon.srt")
+
+    assert window.translation_progress_bar.isHidden()
+    window.set_translation_running(True)
+    assert not window.translation_progress_bar.isHidden()
+    assert not window.translation_start_button.isEnabled()
+    assert window.translation_stop_button.isEnabled()
+
+    window.update_translation_progress(45, "翻译字幕 45%")
+    assert window.translation_progress_bar.value() == 45
+    assert "45%" in window.translation_feedback_label.text()
+
+    output = tmp_path / "movie.en.srt"
+    window.translation_finished(True, str(output))
+    assert window.translation_progress_bar.isHidden()
+    assert window.translation_start_button.isEnabled()
+    assert not window.translation_stop_button.isEnabled()
+    assert window.translation_feedback_label.text() == "翻译完成"
 
     window.close()
 

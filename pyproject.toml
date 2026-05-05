@@ -34,6 +34,7 @@ dependencies = [
 [project.scripts]
 ai-sub = "aisrt.cli:main"
 ai-sub-gui = "aisrt.gui:main"
+ai-sub-translate = "aisrt.translate_cli:main"
 
 [project.optional-dependencies]
 dev = [

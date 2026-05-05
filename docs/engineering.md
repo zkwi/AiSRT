@@ -15,6 +15,9 @@ aisrt/
   gui_i18n.py      GUI 多语言文案、普通日志和诊断信息本地化
   gui_theme.py     GUI QSS 样式、图标路径和控件视觉状态
   local_asr.py     本地 ASR 调用、分块识别、时间戳整理
+  local_translate.py 本地 SRT 翻译、分段、提示词和译文合并
+  translate_cli.py  SRT 翻译命令行入口
+  translate_worker.py GUI 本地翻译后台线程
   postprocess.py   SRT 解析、清洗、去重、断行和时间轴修复
   diagnostics.py   本地环境检查
   user_messages.py 用户可读错误提示
@@ -46,7 +49,7 @@ aisrt/
 - 运行模式负责在后台调整批大小、token、dtype 等技术参数，不把这些技术细节重新放回界面。
 - 识别语言默认自动识别；新增语言选项时应使用底层 ASR 支持的规范英文语言名作为内部值。
 - GUI 默认把字幕保存到每个媒体文件所在目录；统一输出目录保留给 CLI 的 `--out-dir`，避免普通用户多做选择。
-- SRT 翻译入口只做外部服务使用指引，提供“打开 DeepSeek 官网”和“复制提示词”两个动作；不要把第三方翻译服务调用集成进本地处理链路。
+- SRT 翻译走本地 HY-MT 模型，只翻译字幕正文；编号、时间轴和输出 SRT 结构由程序保留并合并。不要接入云端翻译 API 或自动上传字幕文件。
 
 ## 提交前检查
 

@@ -41,7 +41,6 @@ from .gui_assets import (
     APP_PRODUCT_SUBTITLE,
     AUDIO_EXTENSIONS,
     AUDIO_ICON_PATH,
-    DEEPSEEK_CHAT_URL,
     FILE_ICON_PATH,
     FONT_FAMILY_CANDIDATES,
     PLAY_ICON_PATH,
@@ -78,6 +77,8 @@ from .local_asr import (
     DEFAULT_MODEL_SIZE,
     resolve_asr_model,
 )
+from .translate_cli import default_output_path
+from .translate_worker import SrtTranslationWorker, TranslationOptions
 
 
 LANGUAGE_PRESETS = [
@@ -116,6 +117,23 @@ CAPTION_PRESETS = [
     ("caption_recommended", (22, 44)),
     ("caption_long", (28, 56)),
 ]
+TRANSLATION_TARGET_PRESETS = [
+    ("translation_target_zh", "简体中文"),
+    ("translation_target_zh_hant", "繁體中文"),
+    ("translation_target_en", "English"),
+    ("translation_target_ja", "Japanese"),
+    ("translation_target_ko", "Korean"),
+    ("translation_target_fr", "French"),
+    ("translation_target_de", "German"),
+    ("translation_target_es", "Spanish"),
+    ("translation_target_pt", "Portuguese"),
+    ("translation_target_ru", "Russian"),
+    ("translation_target_ar", "Arabic"),
+]
+TRANSLATION_MODEL_PRESETS = [
+    ("translation_model_quality", "quality"),
+    ("translation_model_fast", "fast"),
+]
 STATUS_ROLE = Qt.ItemDataRole.UserRole
 
 
@@ -126,6 +144,9 @@ class MainWindow(QMainWindow):
         self.files: list[Path] = []
         self.thread: QThread | None = None
         self.worker: SubtitleWorker | None = None
+        self.translation_thread: QThread | None = None
+        self.translation_worker: SrtTranslationWorker | None = None
+        self.translation_running = False
         self.ui_running = False
         self.full_log: list[str] = []
         self.ui_language = DEFAULT_UI_LANGUAGE
@@ -135,7 +156,6 @@ class MainWindow(QMainWindow):
         self.last_progress_detail = ""
         self.last_file_dialog_dir = Path.cwd()
         self.current_processing_row: int | None = None
-        self.translation_prompt_copied = False
 
         self.setWindowTitle(APP_DISPLAY_NAME)
         self.app_icon = load_app_icon()
@@ -184,8 +204,11 @@ class MainWindow(QMainWindow):
         self.table.itemSelectionChanged.connect(self.update_queue_actions)
         self.ui_language_combo.currentIndexChanged.connect(self.change_ui_language)
         self.translation_button.clicked.connect(self.show_translation_dialog)
-        self.open_deepseek_button.clicked.connect(self.open_deepseek_chat)
-        self.copy_prompt_button.clicked.connect(self.copy_translation_prompt)
+        self.translation_browse_button.clicked.connect(self.browse_translation_srt)
+        self.translation_source_edit.textChanged.connect(self.refresh_translation_output_preview)
+        self.translation_target_combo.currentTextChanged.connect(lambda _text: self.refresh_translation_output_preview())
+        self.translation_start_button.clicked.connect(self.start_translation)
+        self.translation_stop_button.clicked.connect(self.request_translation_stop)
         self.advanced_button.clicked.connect(self.show_advanced_settings)
         self.profile_combo.currentIndexChanged.connect(lambda _index: self.apply_profile())
         self.show_technical_log_check.toggled.connect(self.refresh_log_view)
@@ -274,23 +297,135 @@ class MainWindow(QMainWindow):
         self.exec_centered_dialog(box)
         return box.clickedButton() is overwrite_button
 
-    def translation_prompt_text(self) -> str:
-        return self.t("translation_prompt")
-
     def show_translation_dialog(self) -> None:
-        self.translation_prompt_copied = False
-        self.translation_feedback_label.clear()
-        self.copy_prompt_button.setText(self.t("copy_prompt"))
+        if not self.translation_running:
+            self.translation_feedback_label.setText(self.t("translation_ready"))
+            self.refresh_translation_output_preview()
         self.exec_centered_dialog(self.translation_dialog)
 
-    def open_deepseek_chat(self) -> None:
-        QDesktopServices.openUrl(QUrl(DEEPSEEK_CHAT_URL))
+    def browse_translation_srt(self) -> None:
+        path, _filter = QFileDialog.getOpenFileName(
+            self,
+            self.t("translation_select_srt_title"),
+            str(self.last_file_dialog_dir),
+            "SRT (*.srt)",
+        )
+        if not path:
+            return
+        srt_path = Path(path)
+        self.last_file_dialog_dir = srt_path.parent
+        self.translation_source_edit.setText(str(srt_path))
+        self.refresh_translation_output_preview()
 
-    def copy_translation_prompt(self) -> None:
-        QApplication.clipboard().setText(self.translation_prompt_text())
-        self.translation_prompt_copied = True
-        self.copy_prompt_button.setText(self.t("translation_prompt_copied"))
-        self.translation_feedback_label.setText(self.t("translation_prompt_copied"))
+    def current_translation_target(self) -> str:
+        current_text = self.translation_target_combo.currentText().strip()
+        current_data = self.translation_target_combo.currentData()
+        if self.translation_target_combo.findText(current_text) >= 0 and isinstance(current_data, str):
+            return current_data
+        return current_text or "简体中文"
+
+    def refresh_translation_output_preview(self) -> None:
+        source_text = self.translation_source_edit.text().strip()
+        if not source_text:
+            self.translation_output_edit.clear()
+            return
+        source_path = Path(source_text).expanduser()
+        if source_path.suffix.lower() != ".srt":
+            self.translation_output_edit.clear()
+            return
+        self.translation_output_edit.setText(str(default_output_path(source_path, self.current_translation_target())))
+
+    def set_translation_running(self, running: bool) -> None:
+        self.translation_running = running
+        self.translation_source_edit.setEnabled(not running)
+        self.translation_browse_button.setEnabled(not running)
+        self.translation_target_combo.setEnabled(not running)
+        self.translation_model_mode_combo.setEnabled(not running)
+        self.translation_output_edit.setEnabled(not running)
+        self.translation_start_button.setEnabled(not running)
+        self.translation_stop_button.setEnabled(running)
+        self.translation_progress_bar.setVisible(running)
+
+    def start_translation(self) -> None:
+        if self.is_running():
+            return
+
+        source_text = self.translation_source_edit.text().strip()
+        if not source_text:
+            self.show_message(
+                QMessageBox.Icon.Information,
+                self.t("translation_missing_source_title"),
+                self.t("translation_missing_source_body"),
+            )
+            return
+
+        source_path = Path(source_text).expanduser().resolve()
+        output_text = self.translation_output_edit.text().strip()
+        output_path = Path(output_text).expanduser().resolve() if output_text else default_output_path(source_path, self.current_translation_target())
+        overwrite = self.overwrite_check.isChecked()
+        if output_path.exists() and not overwrite:
+            preview = f"  - {output_path}"
+            if not self.ask_overwrite_outputs(preview):
+                return
+            overwrite = True
+
+        self.log_box.clear()
+        self.full_log.clear()
+        self.clear_log_button.setEnabled(False)
+        self.translation_progress_bar.setValue(0)
+        self.translation_feedback_label.setText(self.t("translation_loading"))
+        self.append_log("[START] 开始翻译字幕")
+        self.set_translation_running(True)
+
+        self.translation_thread = QThread(self)
+        self.translation_worker = SrtTranslationWorker(
+            TranslationOptions(
+                input_path=source_path,
+                output_path=output_path,
+                target_language=self.current_translation_target(),
+                model_mode=self.translation_model_mode_combo.currentData() or "quality",
+                device=self.device_combo.currentData() or "auto",
+                dtype=self.dtype_value,
+                chunk_size=50,
+                context_size=5,
+                max_new_tokens=2048,
+                local_files_only=self.local_only_check.isChecked(),
+                overwrite=overwrite,
+            )
+        )
+        self.translation_worker.moveToThread(self.translation_thread)
+        self.translation_thread.started.connect(self.translation_worker.run)
+        self.translation_worker.log.connect(self.append_log)
+        self.translation_worker.progress.connect(self.update_translation_progress)
+        self.translation_worker.finished.connect(self.translation_finished)
+        self.translation_worker.finished.connect(lambda *_args: self.translation_thread.quit() if self.translation_thread else None)
+        self.translation_worker.finished.connect(self.translation_worker.deleteLater)
+        self.translation_thread.finished.connect(self.translation_thread.deleteLater)
+        self.translation_thread.finished.connect(self.translation_thread_finished)
+        self.translation_thread.start()
+
+    def update_translation_progress(self, percent: int, detail: str) -> None:
+        self.translation_progress_bar.setValue(percent)
+        self.translation_feedback_label.setText(self.display_log_text(detail) or detail)
+
+    def request_translation_stop(self) -> None:
+        if self.translation_worker is None:
+            return
+        self.translation_worker.request_stop()
+        self.translation_stop_button.setEnabled(False)
+        self.translation_feedback_label.setText(self.t("translation_stopping"))
+        self.append_log("[CANCEL] 已请求停止翻译")
+
+    def translation_finished(self, success: bool, message: str) -> None:
+        self.set_translation_running(False)
+        if success:
+            self.translation_feedback_label.setText(self.t("translation_done", path=message))
+        else:
+            self.translation_feedback_label.setText(self.t("translation_failed", message=self.display_log_text(message) or message))
+
+    def translation_thread_finished(self) -> None:
+        self.translation_thread = None
+        self.translation_worker = None
 
     def standard_icon(self, icon: QStyle.StandardPixmap) -> QIcon:
         return self.style().standardIcon(icon)
@@ -581,68 +716,83 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(18, 18, 18, 18)
         layout.setSpacing(12)
 
-        self.translation_intro_label = QLabel("本功能不在软件内处理翻译，而是引导你使用 DeepSeek Chat 翻译已生成的 SRT 文件。")
+        self.translation_intro_label = QLabel("使用本地翻译模型处理已有 SRT 文件，复用当前 Python 和 CUDA 环境。")
         self.translation_intro_label.setObjectName("HintText")
         self.translation_intro_label.setWordWrap(True)
         layout.addWidget(self.translation_intro_label)
 
-        steps = QFrame()
-        steps.setProperty("role", "card")
-        steps_layout = QVBoxLayout(steps)
-        steps_layout.setContentsMargins(16, 14, 16, 16)
-        steps_layout.setSpacing(8)
+        settings = QFrame()
+        settings.setProperty("role", "card")
+        grid = QGridLayout(settings)
+        grid.setContentsMargins(16, 14, 16, 16)
+        grid.setHorizontalSpacing(10)
+        grid.setVerticalSpacing(10)
+        grid.setColumnMinimumWidth(0, 96)
+        grid.setColumnStretch(1, 1)
 
-        self.translation_steps_title_label = QLabel("操作步骤")
-        self.translation_steps_title_label.setObjectName("SectionTitle")
-        steps_layout.addWidget(self.translation_steps_title_label)
+        self.translation_source_label = QLabel("SRT 文件")
+        self.translation_source_edit = QLineEdit()
+        self.translation_source_edit.setPlaceholderText("选择要翻译的 .srt 文件")
+        self.translation_browse_button = QPushButton("选择 SRT")
+        self.translation_browse_button.setProperty("variant", "secondary")
+        self.prepare_button(self.translation_browse_button)
+        source_row = QHBoxLayout()
+        source_row.setSpacing(8)
+        source_row.addWidget(self.translation_source_edit, 1)
+        source_row.addWidget(self.translation_browse_button)
 
-        self.translation_step_open_label = QLabel()
-        self.translation_step_upload_label = QLabel()
-        self.translation_step_prompt_label = QLabel()
-        for label in (
-            self.translation_step_open_label,
-            self.translation_step_upload_label,
-            self.translation_step_prompt_label,
-        ):
-            label.setObjectName("HintText")
-            label.setWordWrap(True)
-            steps_layout.addWidget(label)
-        layout.addWidget(steps)
+        self.translation_target_label = QLabel("目标语言")
+        self.translation_target_combo = QComboBox()
+        self.translation_target_combo.setEditable(True)
+        self.prepare_combo(self.translation_target_combo)
+
+        self.translation_model_mode_label = QLabel("模型模式")
+        self.translation_model_mode_combo = QComboBox()
+        self.prepare_combo(self.translation_model_mode_combo)
+
+        self.translation_output_label = QLabel("输出文件")
+        self.translation_output_edit = QLineEdit()
+        self.translation_output_edit.setPlaceholderText("自动生成输出路径")
+
+        grid.addWidget(self.translation_source_label, 0, 0)
+        grid.addLayout(source_row, 0, 1, 1, 3)
+        grid.addWidget(self.translation_target_label, 1, 0)
+        grid.addWidget(self.translation_target_combo, 1, 1)
+        grid.addWidget(self.translation_model_mode_label, 1, 2)
+        grid.addWidget(self.translation_model_mode_combo, 1, 3)
+        grid.addWidget(self.translation_output_label, 2, 0)
+        grid.addWidget(self.translation_output_edit, 2, 1, 1, 3)
+        layout.addWidget(settings)
+
+        self.translation_progress_bar = QProgressBar()
+        self.translation_progress_bar.setRange(0, 100)
+        self.translation_progress_bar.setValue(0)
+        self.translation_progress_bar.setVisible(False)
+        layout.addWidget(self.translation_progress_bar)
 
         action_row = QHBoxLayout()
         action_row.setSpacing(8)
-        self.open_deepseek_button = QPushButton("打开 DeepSeek 官网")
-        self.open_deepseek_button.setProperty("variant", "primary")
-        self.prepare_button(self.open_deepseek_button)
-        self.copy_prompt_button = QPushButton("复制提示词")
-        self.copy_prompt_button.setProperty("variant", "accent")
-        self.prepare_button(self.copy_prompt_button)
+        self.translation_start_button = QPushButton("开始翻译")
+        self.translation_start_button.setProperty("variant", "primary")
+        self.prepare_button(self.translation_start_button)
+        self.translation_stop_button = QPushButton("停止")
+        self.translation_stop_button.setProperty("variant", "secondary")
+        self.translation_stop_button.setEnabled(False)
+        self.prepare_button(self.translation_stop_button)
         self.translation_feedback_label = QLabel("")
         self.translation_feedback_label.setObjectName("HintText")
-        action_row.addWidget(self.open_deepseek_button)
-        action_row.addWidget(self.copy_prompt_button)
+        self.translation_feedback_label.setWordWrap(True)
+        action_row.addWidget(self.translation_start_button)
+        action_row.addWidget(self.translation_stop_button)
         action_row.addWidget(self.translation_feedback_label)
         action_row.addStretch()
-        layout.addLayout(action_row)
-
-        self.translation_prompt_label = QLabel("预设提示词")
-        self.translation_prompt_label.setObjectName("SectionTitle")
-        layout.addWidget(self.translation_prompt_label)
-
-        self.translation_prompt_box = QPlainTextEdit()
-        self.translation_prompt_box.setReadOnly(True)
-        self.translation_prompt_box.setMinimumHeight(190)
-        layout.addWidget(self.translation_prompt_box)
-
-        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
-        close_button = buttons.button(QDialogButtonBox.StandardButton.Close)
+        close_button = QPushButton("关闭")
         self.translation_close_button = close_button
-        if close_button is not None:
-            close_button.setText("关闭")
-            close_button.setProperty("variant", "secondary")
-            self.prepare_button(close_button)
-        buttons.rejected.connect(dialog.reject)
-        layout.addWidget(buttons)
+        close_button.setProperty("variant", "secondary")
+        self.prepare_button(close_button)
+        close_button.clicked.connect(dialog.reject)
+        action_row.addWidget(close_button)
+        layout.addLayout(action_row)
         return dialog
 
     def build_advanced_settings_dialog(self) -> QDialog:
@@ -847,21 +997,22 @@ class MainWindow(QMainWindow):
 
         self.translation_dialog.setWindowTitle(self.t("translation_dialog_title"))
         self.translation_intro_label.setText(self.t("translation_intro"))
-        self.translation_steps_title_label.setText(self.t("translation_steps_title"))
-        self.translation_step_open_label.setText(self.t("translation_step_open"))
-        self.translation_step_upload_label.setText(self.t("translation_step_upload"))
-        self.translation_step_prompt_label.setText(self.t("translation_step_prompt"))
-        self.open_deepseek_button.setText(self.t("open_deepseek"))
-        self.open_deepseek_button.setToolTip(self.t("open_deepseek_tooltip"))
-        self.copy_prompt_button.setText(
-            self.t("translation_prompt_copied") if self.translation_prompt_copied else self.t("copy_prompt")
-        )
-        self.copy_prompt_button.setToolTip(self.t("copy_prompt_tooltip"))
-        self.translation_feedback_label.setText(
-            self.t("translation_prompt_copied") if self.translation_prompt_copied else ""
-        )
-        self.translation_prompt_label.setText(self.t("translation_prompt_label"))
-        self.translation_prompt_box.setPlainText(self.translation_prompt_text())
+        self.translation_source_label.setText(self.t("translation_source"))
+        self.translation_source_edit.setPlaceholderText(self.t("translation_source_placeholder"))
+        self.translation_browse_button.setText(self.t("translation_browse"))
+        self.translation_browse_button.setToolTip(self.t("translation_browse_tooltip"))
+        self.translation_target_label.setText(self.t("translation_target"))
+        self.translation_target_combo.setToolTip(self.t("translation_target_tooltip"))
+        self.translation_model_mode_label.setText(self.t("translation_model_mode"))
+        self.translation_model_mode_combo.setToolTip(self.t("translation_model_mode_tooltip"))
+        self.translation_output_label.setText(self.t("translation_output"))
+        self.translation_output_edit.setPlaceholderText(self.t("translation_output_placeholder"))
+        self.translation_start_button.setText(self.t("translation_start"))
+        self.translation_start_button.setToolTip(self.t("translation_start_tooltip"))
+        self.translation_stop_button.setText(self.t("stop"))
+        self.translation_stop_button.setToolTip(self.t("stop"))
+        if not self.translation_running:
+            self.translation_feedback_label.setText(self.t("translation_ready"))
         if self.translation_close_button is not None:
             self.translation_close_button.setText(self.t("close"))
 
@@ -877,6 +1028,8 @@ class MainWindow(QMainWindow):
         self.set_labeled_combo(self.device_combo, DEVICE_PRESETS, "auto")
         self.set_labeled_combo(self.chunk_seconds_combo, CHUNK_PRESETS, DEFAULT_CHUNK_SECONDS)
         self.set_labeled_combo(self.caption_preset_combo, CAPTION_PRESETS, (22, 44))
+        self.set_labeled_combo(self.translation_target_combo, TRANSLATION_TARGET_PRESETS, "简体中文")
+        self.set_labeled_combo(self.translation_model_mode_combo, TRANSLATION_MODEL_PRESETS, "quality")
 
         for row in range(self.table.rowCount()):
             self.update_row_status_text(row)
@@ -1333,6 +1486,9 @@ class MainWindow(QMainWindow):
         self.update_file_count()
 
     def request_stop(self) -> None:
+        if self.translation_worker is not None:
+            self.request_translation_stop()
+            return
         if self.worker is None:
             return
         self.worker.request_stop()
@@ -1342,7 +1498,12 @@ class MainWindow(QMainWindow):
         self.append_log("[CANCEL] 已请求停止处理")
 
     def is_running(self) -> bool:
-        return self.ui_running or (self.thread is not None and self.thread.isRunning())
+        return (
+            self.ui_running
+            or (self.thread is not None and self.thread.isRunning())
+            or self.translation_running
+            or (self.translation_thread is not None and self.translation_thread.isRunning())
+        )
 
     def open_output_folder(self) -> None:
         path: Path | None = None
