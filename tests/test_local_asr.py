@@ -19,6 +19,7 @@ from aisrt.cli import (
 from aisrt.local_asr import (
     ASR_MODEL_SIZES,
     DEFAULT_LANGUAGE,
+    DEFAULT_MAX_NEW_TOKENS,
     DEFAULT_MODEL_SIZE,
     SUPPORTED_ASR_LANGUAGES,
     align_items_to_text_pieces,
@@ -305,6 +306,15 @@ def test_cli_language_option_defaults_to_auto():
 
     args = parser.parse_args(["movie.mp4", "--language", "English"])
     assert args.language == "English"
+
+
+def test_cli_uses_balanced_asr_generation_limit_by_default():
+    parser = build_parser()
+
+    args = parser.parse_args(["movie.mp4"])
+
+    assert DEFAULT_MAX_NEW_TOKENS == 1536
+    assert args.max_new_tokens == DEFAULT_MAX_NEW_TOKENS
 
 
 def test_cli_load_message_marks_custom_model(monkeypatch, capsys, tmp_path):

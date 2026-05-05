@@ -16,6 +16,7 @@ ASR_MODEL_SIZES = {
 }
 DEFAULT_MODEL = ASR_MODEL_SIZES[DEFAULT_MODEL_SIZE]
 DEFAULT_LANGUAGE = ""
+DEFAULT_MAX_NEW_TOKENS = 1536
 SUPPORTED_ASR_LANGUAGES = [
     "Chinese",
     "English",
@@ -141,7 +142,7 @@ def load_local_model(
     device: str = "auto",
     dtype: str = "auto",
     batch_size: int = 1,
-    max_new_tokens: int = 2048,
+    max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS,
     local_files_only: bool = False,
     flash_attention: bool = False,
 ) -> Any:

@@ -75,6 +75,7 @@ from .local_asr import (
     DEFAULT_ALIGNER,
     DEFAULT_CHUNK_SECONDS,
     DEFAULT_LANGUAGE,
+    DEFAULT_MAX_NEW_TOKENS,
     DEFAULT_MODEL_SIZE,
     SUPPORTED_ASR_LANGUAGES,
     resolve_asr_model,
@@ -888,7 +889,7 @@ class MainWindow(QMainWindow):
         self.prepare_combo(self.device_combo)
 
         self.batch_size_value = 1
-        self.max_new_tokens_value = 2048
+        self.max_new_tokens_value = DEFAULT_MAX_NEW_TOKENS
         self.dtype_value = "auto"
 
         self.chunk_seconds_combo = QComboBox()
@@ -1317,7 +1318,7 @@ class MainWindow(QMainWindow):
             self.set_combo_data(self.device_combo, "auto")
             self.set_combo_data(self.chunk_seconds_combo, DEFAULT_CHUNK_SECONDS)
             self.batch_size_value = 1
-            self.max_new_tokens_value = 2048
+            self.max_new_tokens_value = DEFAULT_MAX_NEW_TOKENS
             self.dtype_value = "auto"
 
     def show_advanced_settings(self) -> None:

@@ -16,6 +16,7 @@ from .local_asr import (
     ASR_MODEL_SIZES,
     DEFAULT_ALIGNER,
     DEFAULT_CHUNK_SECONDS,
+    DEFAULT_MAX_NEW_TOKENS,
     DEFAULT_MODEL_SIZE,
     SUPPORTED_ASR_LANGUAGES,
     load_local_model,
@@ -380,7 +381,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--device", default="auto", help="推理设备：auto、cuda:0 或 cpu，默认 auto")
     parser.add_argument("--dtype", choices=["auto", "bfloat16", "float16", "float32"], default="auto", help="模型 dtype，默认 auto")
-    parser.add_argument("--max-new-tokens", type=positive_int, default=2048, help="每个音频块最大生成 token 数")
+    parser.add_argument(
+        "--max-new-tokens",
+        type=positive_int,
+        default=DEFAULT_MAX_NEW_TOKENS,
+        help=f"每个音频块最大生成 token 数，默认 {DEFAULT_MAX_NEW_TOKENS}",
+    )
     parser.add_argument("--local-files-only", action="store_true", help="只使用本地已下载模型，不联网下载权重")
     parser.add_argument("--flash-attn", action="store_true", help="启用 flash_attention_2，需要本机已安装且硬件支持")
     parser.add_argument("--doctor", action="store_true", help="检查 FFmpeg、CUDA、缓存和输出目录是否可用")

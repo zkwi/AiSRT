@@ -2,16 +2,15 @@
 
 ## 简体中文
 
-本次发布提供轻量 Windows portable 源码包和 Python wheel，重点改进本地 SRT 翻译、GUI 多语言体验和日志提示。
+本次发布提供轻量 Windows portable 源码包和 Python wheel，重点优化本地 ASR 默认参数，在不切换模型、不提高批大小的前提下改善常规处理速度。
 
 ### 主要变化
 
-- 新增本地 SRT 翻译能力，可在 GUI 中翻译已有 SRT，也可通过 `ai-sub-translate` 在命令行批处理。
-- GUI 主流程支持“识别并翻译”，会先保留原始 ASR 字幕，再输出翻译语言字幕；翻译失败时不会删除原始字幕。
-- 识别和翻译进度增加预估剩余时间，运行日志默认展示关键进度和问题提示，详细日志用于排查底层细节。
-- 界面语言扩展为简体中文、繁体中文、英语、日语、韩语和西班牙语；首次启动默认跟随系统语言，手动切换后会记住。
-- 优化 CUDA/GPU、模型下载、FFmpeg、权限和磁盘空间等常见问题的用户提示。
-- 更新中英文 README、Wiki 文档和预览截图，明确本地 AI 字幕生成、SRT 翻译、GUI/CLI 和隐私边界。
+- 将 ASR 每个音频块的默认 `max_new_tokens` 从 2048 降到 1536，减少异常长生成带来的耗时。
+- 保留稳定的默认组合：`1.7B` ASR 模型、45 秒音频分块和 batch size 1。
+- CLI 帮助、GUI 推荐模式和底层模型加载默认值已统一使用新的生成上限。
+- 中英文 README 增加 `--max-new-tokens` 说明，长对白被截断时仍可临时调高。
+- 增加 CLI 和 GUI 默认参数测试，降低后续改动误改推荐档位的风险。
 
 ### 发布资产
 
@@ -28,16 +27,15 @@
 
 ## English
 
-This release provides a lightweight Windows portable source package and a Python wheel, with improvements focused on local SRT translation, GUI multilingual UX, and clearer logs.
+This release provides a lightweight Windows portable source package and a Python wheel, focused on tuning local ASR defaults for better everyday speed without changing the model or raising batch size.
 
 ### Highlights
 
-- Added local SRT translation for both the GUI and the `ai-sub-translate` CLI.
-- The main GUI flow can now recognize and translate in one run, keeping the original ASR subtitles before writing translated subtitles; translation failures no longer remove the original subtitles.
-- Recognition and translation progress now include estimated remaining time. The default run log shows key progress and issue hints, while detailed logs remain available for troubleshooting.
-- UI copy now supports Simplified Chinese, Traditional Chinese, English, Japanese, Korean, and Spanish. First launch follows the system language when supported, and manual changes are remembered.
-- Improved user-facing hints for CUDA/GPU, model download, FFmpeg, permission, and disk-space problems.
-- Refreshed the Chinese and English README files, Wiki docs, and preview screenshots around local AI subtitle generation, SRT translation, GUI/CLI usage, and privacy boundaries.
+- Lowered the default ASR `max_new_tokens` per audio chunk from 2048 to 1536 to reduce time spent on unusually long generations.
+- Kept the stable default combination: `1.7B` ASR model, 45-second audio chunks and batch size 1.
+- Unified the CLI help, GUI recommended profile and model-loading default around the new generation limit.
+- Documented `--max-new-tokens` in both README files; users can still raise it temporarily if long dialogue is truncated.
+- Added CLI and GUI default-parameter tests to keep the recommended profile from drifting accidentally.
 
 ### Assets
 

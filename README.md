@@ -207,6 +207,7 @@ ai-sub "movie.mp4" `
 | `-c, --context` | 可选上下文提示，适合填写片名、角色名、人名、地名等具体词。 |
 | `-d, --duration` | ASR 分块目标秒数，默认 45；低声、稀疏对白或识别为空时可改为 30。 |
 | `--device` | 推理设备，默认 `auto`；常用值为 `auto`、`cuda:0`、`cpu`。 |
+| `--max-new-tokens` | 每个音频块最大生成 token 数，默认 1536；长对白漏字时可临时调高。 |
 | `--local-files-only` | 只读取本地模型，不联网下载。 |
 
 完整参数：
@@ -358,8 +359,8 @@ git diff --check
 Windows portable 包是轻量源码包，不包含 Python、PyTorch/CUDA 运行库、模型权重、FFmpeg、`.venv`、缓存、媒体、字幕、截图或日志。目标产物为：
 
 ```text
-dist/release/AiSRT-v0.1.2-windows-portable.zip
-dist/release/aisrt-0.1.2-py3-none-any.whl
+dist/release/AiSRT-v0.1.3-windows-portable.zip
+dist/release/aisrt-0.1.3-py3-none-any.whl
 dist/release/SHA256SUMS.txt
 ```
 

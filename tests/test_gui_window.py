@@ -1050,6 +1050,19 @@ def test_gui_uses_presets_instead_of_precise_numeric_tuning():
     window.close()
 
 
+def test_recommended_profile_uses_balanced_asr_generation_limit():
+    window = MainWindow(ui_language="zh-Hans")
+
+    window.profile_combo.setCurrentText("推荐")
+    options = window.options()
+
+    assert options.batch_size == 1
+    assert options.chunk_seconds == 45
+    assert options.max_new_tokens == 1536
+
+    window.close()
+
+
 def test_caption_style_preset_controls_line_lengths():
     window = MainWindow(ui_language="zh-Hans")
 

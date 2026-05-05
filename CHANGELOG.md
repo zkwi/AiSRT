@@ -6,6 +6,11 @@ This project follows a simple changelog style for now: group user-visible change
 
 ## Unreleased
 
+## 0.1.3 - 2026-05-06
+
+- Lowered the default ASR `max_new_tokens` limit from 2048 to 1536 after local sample testing, keeping the stable 1.7B model, 45-second chunks and batch size 1 defaults.
+- Documented the ASR token limit in the Chinese and English README files and added tests covering the CLI and GUI defaults.
+
 ## 0.1.2 - 2026-05-05
 
 - Integrated translation into the main GUI processing flow with an enable-translation checkbox and target-language field.

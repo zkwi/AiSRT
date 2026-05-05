@@ -51,13 +51,13 @@ GUI 相关改动额外确认：
 构建命令：
 
 ```powershell
-.\scripts\build_portable.ps1 -Version 0.1.2
+.\scripts\build_portable.ps1 -Version 0.1.3
 ```
 
 产物应位于 `dist/release/`：
 
-- [ ] `AiSRT-v0.1.2-windows-portable.zip`
-- [ ] `aisrt-0.1.2-py3-none-any.whl`
+- [ ] `AiSRT-v0.1.3-windows-portable.zip`
+- [ ] `aisrt-0.1.3-py3-none-any.whl`
 - [ ] `SHA256SUMS.txt`
 
 打包约束：
@@ -74,13 +74,13 @@ GUI 相关改动额外确认：
 GitHub Release：
 
 ```powershell
-git tag v0.1.2
-git push origin v0.1.2
-gh release create v0.1.2 `
-  dist/release/AiSRT-v0.1.2-windows-portable.zip `
-  dist/release/aisrt-0.1.2-py3-none-any.whl `
+git tag v0.1.3
+git push origin v0.1.3
+gh release create v0.1.3 `
+  dist/release/AiSRT-v0.1.3-windows-portable.zip `
+  dist/release/aisrt-0.1.3-py3-none-any.whl `
   dist/release/SHA256SUMS.txt `
-  --title "AISRT v0.1.2" `
+  --title "AISRT v0.1.3" `
   --notes-file dist/release/RELEASE_NOTES.md
 ```
 

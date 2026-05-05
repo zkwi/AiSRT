@@ -207,6 +207,7 @@ Common options:
 | `-c, --context` | Optional context prompt, useful for titles, character names, people, places, and domain terms. |
 | `-d, --duration` | Target ASR chunk length in seconds. Default: 45. Try 30 for quiet audio or sparse dialogue. |
 | `--device` | Inference device. Default: `auto`. Common values: `auto`, `cuda:0`, `cpu`. |
+| `--max-new-tokens` | Maximum generated tokens per audio chunk. Default: 1536. Raise temporarily if long dialogue is truncated. |
 | `--local-files-only` | Use local model files only and avoid network downloads. |
 
 Full CLI help:
@@ -360,8 +361,8 @@ The Windows portable package is a lightweight source package. It does not includ
 Expected artifacts:
 
 ```text
-dist/release/AiSRT-v0.1.2-windows-portable.zip
-dist/release/aisrt-0.1.2-py3-none-any.whl
+dist/release/AiSRT-v0.1.3-windows-portable.zip
+dist/release/aisrt-0.1.3-py3-none-any.whl
 dist/release/SHA256SUMS.txt
 ```
 
