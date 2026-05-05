@@ -165,7 +165,7 @@ class SubtitleWorker(QObject):
                         if self.should_stop():
                             raise ProcessingCancelled("用户已取消处理。")
                         translated_srt.write_text(translated, encoding="utf-8")
-                        self.log.emit(f"[OK] {translated_srt}")
+                        self.log.emit(f"[TRANSLATE OK] {translated_srt}")
                     except ProcessingCancelled:
                         raise
                     except Exception as exc:
@@ -189,6 +189,6 @@ class SubtitleWorker(QObject):
                 self.file_status.emit(index, "失败，详见日志", str(out_dir))
 
             done = int(((index + 1) / total) * 100)
-            self.progress.emit(done, f"已完成 {index + 1}/{total}")
+            self.progress.emit(done, f"已处理 {index + 1}/{total}")
 
         self.finished.emit()

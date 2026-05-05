@@ -178,6 +178,7 @@ TEXT: dict[str, dict[str, str]] = {
         "log_done": "处理结束。",
         "log_start": "开始处理。",
         "log_start_with_translation": "开始处理并翻译。",
+        "log_translation_start": "开始翻译字幕。",
         "log_subtitle_done": "字幕生成完成。",
         "log_stop_requested": "已请求停止处理",
         "log_cancelled": "已取消：{message}",
@@ -206,7 +207,7 @@ TEXT: dict[str, dict[str, str]] = {
         "progress_cancel_remaining": "已取消后续任务",
         "progress_cancelled": "已取消处理",
         "progress_processing_file": "正在处理 {index}/{total}: {name}",
-        "progress_done_count": "已完成 {index}/{total}",
+        "progress_processed_count": "已处理 {index}/{total}",
     },
     "zh-Hant": {
         "product_name": "AI 大模型字幕助手",
@@ -375,6 +376,7 @@ TEXT: dict[str, dict[str, str]] = {
         "log_done": "處理結束。",
         "log_start": "開始處理。",
         "log_start_with_translation": "開始處理並翻譯。",
+        "log_translation_start": "開始翻譯字幕。",
         "log_subtitle_done": "字幕生成完成。",
         "log_stop_requested": "已請求停止處理",
         "log_cancelled": "已取消：{message}",
@@ -403,7 +405,7 @@ TEXT: dict[str, dict[str, str]] = {
         "progress_cancel_remaining": "已取消後續任務",
         "progress_cancelled": "已取消處理",
         "progress_processing_file": "正在處理 {index}/{total}: {name}",
-        "progress_done_count": "已完成 {index}/{total}",
+        "progress_processed_count": "已處理 {index}/{total}",
     },
     "en": {
         "product_name": "AI Subtitle Assistant",
@@ -572,6 +574,7 @@ TEXT: dict[str, dict[str, str]] = {
         "log_done": "Processing finished.",
         "log_start": "Processing started.",
         "log_start_with_translation": "Processing and translation started.",
+        "log_translation_start": "Translation started.",
         "log_subtitle_done": "Subtitle generated.",
         "log_stop_requested": "Stop requested",
         "log_cancelled": "Cancelled: {message}",
@@ -600,7 +603,7 @@ TEXT: dict[str, dict[str, str]] = {
         "progress_cancel_remaining": "Cancelled remaining tasks",
         "progress_cancelled": "Processing cancelled",
         "progress_processing_file": "Processing {index}/{total}: {name}",
-        "progress_done_count": "Finished {index}/{total}",
+        "progress_processed_count": "Processed {index}/{total}",
     },
 }
 
@@ -740,9 +743,13 @@ def user_log_text(message: str, language: str) -> str | None:
         return tr(language, "log_asr_start")
     if message.startswith("[OK]"):
         return tr(language, "log_subtitle_done")
+    if message.startswith("[TRANSLATE OK]"):
+        return tr(language, "translation_done")
     if message.startswith("[DONE]"):
         return tr(language, "log_done")
     if message.startswith("[START]"):
+        if "翻译字幕" in message or "翻譯字幕" in message:
+            return tr(language, "log_translation_start")
         if "含翻译" in message or "含翻譯" in message:
             return tr(language, "log_start_with_translation")
         return tr(language, "log_start")

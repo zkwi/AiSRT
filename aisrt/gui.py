@@ -421,7 +421,16 @@ class MainWindow(QMainWindow):
 
     def update_translation_progress(self, percent: int, detail: str) -> None:
         self.translation_progress_bar.setValue(percent)
-        self.translation_feedback_label.setText(self.display_log_text(detail) or detail)
+        self.translation_feedback_label.setText(self.translation_progress_detail_text(detail))
+
+    def translation_progress_detail_text(self, detail: str) -> str:
+        if detail == "正在加载翻译模型":
+            return self.t("translation_loading")
+        if detail == "翻译完成":
+            return self.t("translation_done")
+        if detail.startswith("翻译字幕 "):
+            return self.t("progress_translate_percent", percent=detail.replace("翻译字幕 ", "").rstrip("%"))
+        return self.display_log_text(detail) or detail
 
     def request_translation_stop(self) -> None:
         if self.translation_worker is None:
@@ -1468,10 +1477,10 @@ class MainWindow(QMainWindow):
             count_text = prefix.replace("正在处理 ", "")
             index, _, total = count_text.partition("/")
             return self.t("progress_processing_file", index=index, total=total, name=name)
-        if detail.startswith("已完成 "):
-            count_text = detail.replace("已完成 ", "")
+        if detail.startswith("已处理 "):
+            count_text = detail.replace("已处理 ", "")
             index, _, total = count_text.partition("/")
-            return self.t("progress_done_count", index=index, total=total)
+            return self.t("progress_processed_count", index=index, total=total)
 
         filename, separator, progress = detail.partition(" - ")
         if separator:

@@ -322,5 +322,8 @@ def test_translate_cli_default_output_uses_target_language_suffix(tmp_path) -> N
     assert default_output_path(source, "简体中文").name == "sample.zh.srt"
     assert default_output_path(source, "繁體中文").name == "sample.zh-Hant.srt"
     assert default_output_path(source, "English").name == "sample.en.srt"
+    assert default_output_path(source, "英语").name == "sample.en.srt"
     assert default_output_path(source, "Spanish").name == "sample.es.srt"
+    assert default_output_path(source, "西班牙語").name == "sample.es.srt"
+    assert default_output_path(source, "日语").name == "sample.ja.srt"
     assert default_output_path(source, "Klingon").name == "sample.klingon.srt"

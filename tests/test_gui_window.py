@@ -249,9 +249,15 @@ def test_english_ui_has_no_untranslated_visible_copy(tmp_path):
     assert window.caption_preset_combo.itemText(1) == "Recommended"
     assert window.progress_detail_text("模型加载失败") == "Model load failed"
     assert window.progress_detail_text("加载翻译模型") == "Loading translation model"
+    assert window.progress_detail_text("已处理 2/3") == "Processed 2/3"
+    assert window.translation_progress_detail_text("正在加载翻译模型") == "Loading translation model"
+    assert window.translation_progress_detail_text("翻译字幕 45%") == "Translating subtitles 45%"
+    assert window.translation_progress_detail_text("翻译完成") == "Translation complete"
 
     window.append_log("[START] 开始处理")
     window.append_log("[START] 开始处理（含翻译）")
+    window.append_log("[START] 开始翻译字幕")
+    window.append_log("[TRANSLATE OK] movie.zh.srt")
     window.append_log("[CANCEL] 已请求停止处理")
     window.append_log("[ERROR] 模型加载失败")
     window.append_log("[ERROR] movie.mp4: 显存不足。建议使用“低显存”运行模式，或切换到 0.6B 模型后重试。")
@@ -260,6 +266,8 @@ def test_english_ui_has_no_untranslated_visible_copy(tmp_path):
     log_text = window.log_box.toPlainText()
     assert "Processing started." in log_text
     assert "Processing and translation started." in log_text
+    assert "Translation started." in log_text
+    assert "Translation complete" in log_text
     assert "Cancelled: Stop requested" in log_text
     assert "Error: Model load failed" in log_text
     assert "movie.mp4: Not enough VRAM." in log_text

@@ -96,7 +96,7 @@ class SrtTranslationWorker(QObject):
                 raise ProcessingCancelled("用户已取消处理。")
 
             self.options.output_path.write_text(translated, encoding="utf-8")
-            self.log.emit(f"[OK] {self.options.output_path}")
+            self.log.emit(f"[TRANSLATE OK] {self.options.output_path}")
             self.progress.emit(100, "翻译完成")
             self.finished.emit(True, str(self.options.output_path))
         except ProcessingCancelled as exc:

@@ -9,6 +9,7 @@ This project follows a simple changelog style for now: group user-visible change
 - Integrated translation into the main GUI processing flow with an enable-translation checkbox and target-language field.
 - Improved the GUI translation-enabled processing flow so original ASR subtitles are kept when local translation loading or translation fails.
 - Optimized README and docs Wiki copy for GitHub searchability around local AI subtitle generation, SRT translation, GUI, and CLI workflows.
+- Improved translation progress and completion messages in the GUI, plus localized target-language suffix handling and package metadata.
 
 ## 0.1.1 - 2026-05-01
 

@@ -80,8 +80,10 @@ def test_subtitle_worker_translates_after_asr_and_keeps_original(tmp_path, monke
     assert parse_srt(original.read_text(encoding="utf-8"))[0].text == "Hello, world."
     assert parse_srt(translated.read_text(encoding="utf-8"))[0].text == "你好，世界。"
     assert any("[LOAD] Translate=AngelSlim/Hy-MT1.5-1.8B-1.25bit" in log for log in logs)
+    assert any("[TRANSLATE OK]" in log for log in logs)
     assert any("[TRANSLATE] 1/1 完成，总进度 100%" in log for log in logs)
     assert any(detail.endswith("翻译字幕 100%") for _percent, detail in progress)
+    assert progress[-1] == (100, "已处理 1/1")
     assert statuses[-1] == (0, "完成", str(tmp_path))
     assert finished == [True]
 
