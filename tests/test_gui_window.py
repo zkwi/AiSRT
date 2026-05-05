@@ -4,7 +4,7 @@ import re
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import QSettings, Qt
 from PyQt6.QtGui import QFont, QGuiApplication
 from PyQt6.QtWidgets import (
     QApplication,
@@ -44,7 +44,13 @@ from aisrt.gui import (
     load_svg_icon,
     resolve_ui_font_family,
 )
-from aisrt.gui_i18n import TEXT, UI_LANGUAGE_OPTIONS, format_diagnostics_for_ui
+from aisrt.gui_i18n import (
+    TEXT,
+    UI_LANGUAGE_OPTIONS,
+    format_diagnostics_for_ui,
+    resolve_initial_ui_language,
+    ui_language_from_locale,
+)
 from aisrt.gui_theme import APP_QSS, CHEVRON_DOWN_ICON_PATH
 
 
@@ -112,7 +118,7 @@ def queue_status_text(window: MainWindow, row: int = 0) -> str:
 
 
 def test_main_window_uses_native_styles_and_system_font():
-    window = MainWindow()
+    window = MainWindow(ui_language="zh-Hans")
 
     assert window.styleSheet() == APP_QSS
     assert window.centralWidget().objectName() == "RootWidget"
@@ -168,7 +174,7 @@ def test_main_window_uses_native_styles_and_system_font():
 
 
 def test_window_uses_language_neutral_product_copy():
-    window = MainWindow()
+    window = MainWindow(ui_language="zh-Hans")
 
     assert window.windowTitle() == APP_DISPLAY_NAME
     assert APP_DISPLAY_NAME == "AI 大模型字幕助手"
@@ -186,7 +192,7 @@ def test_window_uses_language_neutral_product_copy():
 
 
 def test_ui_language_switch_supports_simplified_traditional_and_english(tmp_path):
-    window = MainWindow()
+    window = MainWindow(ui_language="zh-Hans")
 
     assert window.ui_language_combo.currentData() == "zh-Hans"
     assert window.ui_language_label.text() == "界面语言"
@@ -265,8 +271,32 @@ def test_i18n_dictionaries_have_complete_keys():
         assert set(TEXT[language]) == reference
 
 
+def test_initial_ui_language_follows_system_locale_and_saved_choice(tmp_path):
+    assert ui_language_from_locale("zh_CN") == "zh-Hans"
+    assert ui_language_from_locale("zh_TW") == "zh-Hant"
+    assert ui_language_from_locale("en_US") == "en"
+    assert ui_language_from_locale("ja_JP") == "ja"
+    assert ui_language_from_locale("ko_KR") == "ko"
+    assert ui_language_from_locale("es_ES") == "es"
+    assert ui_language_from_locale("fr_FR") == "zh-Hans"
+    assert resolve_initial_ui_language("es", "en_US") == "es"
+    assert resolve_initial_ui_language("unknown", "en_US") == "en"
+
+    settings = QSettings(str(tmp_path / "settings.ini"), QSettings.Format.IniFormat)
+    window = MainWindow(ui_language_settings=settings, system_locale_name="en_US")
+    assert window.ui_language_combo.currentData() == "en"
+    window.ui_language_combo.setCurrentText("Español")
+    assert settings.value("ui_language") == "es"
+    window.close()
+
+    next_window = MainWindow(ui_language_settings=settings, system_locale_name="en_US")
+    assert next_window.ui_language_combo.currentData() == "es"
+    assert next_window.ui_language_label.text() == "Idioma de la interfaz"
+    next_window.close()
+
+
 def test_additional_ui_language_presets_localize_main_copy():
-    window = MainWindow()
+    window = MainWindow(ui_language="zh-Hans")
 
     window.ui_language_combo.setCurrentText("日本語")
     assert window.ui_language_label.text() == "表示言語"
@@ -274,6 +304,7 @@ def test_additional_ui_language_presets_localize_main_copy():
     assert window.show_technical_log_check.text() == "詳細ログを表示"
     assert window.translation_button.text() == "既存 SRT を翻訳"
     assert "フランス語" in [window.translation_target_combo.itemText(index) for index in range(window.translation_target_combo.count())]
+    assert window.file_count_label.text() == "0 件"
 
     window.ui_language_combo.setCurrentText("한국어")
     assert window.ui_language_label.text() == "화면 언어"
@@ -281,6 +312,7 @@ def test_additional_ui_language_presets_localize_main_copy():
     assert window.file_queue_title_label.text() == "파일 대기열"
     assert window.show_technical_log_check.text() == "상세 로그 표시"
     assert window.translation_model_mode_combo.itemText(0) == "품질 우선"
+    assert window.file_count_label.text() == "0개 파일"
 
     window.ui_language_combo.setCurrentText("Español")
     assert window.ui_language_label.text() == "Idioma de la interfaz"
@@ -288,12 +320,13 @@ def test_additional_ui_language_presets_localize_main_copy():
     assert window.start_button.text() == "Iniciar"
     assert window.translation_dialog.windowTitle() == "Traducción SRT"
     assert "Francés" in [window.translation_target_combo.itemText(index) for index in range(window.translation_target_combo.count())]
+    assert window.file_count_label.text() == "0 archivos"
 
     window.close()
 
 
 def test_ui_language_presets_keep_core_layout_stable():
-    window = MainWindow()
+    window = MainWindow(ui_language="zh-Hans")
     window.resize(window.minimumSize())
     window.show()
 
@@ -361,7 +394,7 @@ def test_gui_language_presets_use_asr_translation_intersection():
 
 
 def test_english_ui_has_no_untranslated_visible_copy(tmp_path):
-    window = MainWindow()
+    window = MainWindow(ui_language="zh-Hans")
     media_path = tmp_path / "movie.mp4"
     media_path.write_bytes(b"")
     window.add_paths([media_path])
@@ -416,7 +449,7 @@ def test_english_ui_has_no_untranslated_visible_copy(tmp_path):
 
 
 def test_english_technical_log_localizes_known_worker_messages():
-    window = MainWindow()
+    window = MainWindow(ui_language="zh-Hans")
     window.ui_language_combo.setCurrentText("English")
     window.show_technical_log_check.setChecked(True)
 
@@ -468,7 +501,7 @@ def test_diagnostics_messages_are_localized_for_ui():
 
 
 def test_subtitle_translation_dialog_uses_local_hymt_flow(tmp_path):
-    window = MainWindow()
+    window = MainWindow(ui_language="zh-Hans")
 
     assert window.translation_button.text() == "翻译已有 SRT"
     assert window.translation_button.property("variant") == "ghost"
@@ -513,7 +546,7 @@ def test_subtitle_translation_dialog_uses_local_hymt_flow(tmp_path):
 
 
 def test_translation_dialog_handles_targets_and_progress_state(tmp_path):
-    window = MainWindow()
+    window = MainWindow(ui_language="zh-Hans")
     source = tmp_path / "movie.srt"
     source.write_text("1\n00:00:00,000 --> 00:00:01,000\nHello.\n", encoding="utf-8")
 
@@ -545,7 +578,7 @@ def test_translation_dialog_handles_targets_and_progress_state(tmp_path):
 
 
 def test_main_window_integrates_translation_into_main_flow(tmp_path):
-    window = MainWindow()
+    window = MainWindow(ui_language="zh-Hans")
 
     assert window.enable_translation_label.text() == "是否启用翻译"
     assert window.enable_translation_check.text() == "启用"
@@ -602,7 +635,7 @@ def test_main_window_integrates_translation_into_main_flow(tmp_path):
 
 
 def test_low_frequency_actions_are_available_from_table_context_menu():
-    window = MainWindow()
+    window = MainWindow(ui_language="zh-Hans")
 
     assert not hasattr(window, "more_button")
     assert window.table.contextMenuPolicy() == Qt.ContextMenuPolicy.CustomContextMenu
@@ -630,7 +663,7 @@ def test_low_frequency_actions_are_available_from_table_context_menu():
 
 
 def test_primary_actions_are_simplified_and_contextual():
-    window = MainWindow()
+    window = MainWindow(ui_language="zh-Hans")
 
     assert window.add_files_button.text() == "添加文件"
     assert window.add_files_button.property("variant") == "accent"
@@ -673,7 +706,7 @@ def test_primary_actions_are_simplified_and_contextual():
 
 
 def test_modal_dialogs_center_on_main_window():
-    window = MainWindow()
+    window = MainWindow(ui_language="zh-Hans")
     window.setGeometry(120, 80, 1000, 700)
     box = QMessageBox(window)
     box.setText("Done")
@@ -688,7 +721,7 @@ def test_modal_dialogs_center_on_main_window():
 
 
 def test_output_directory_setting_is_removed_and_uses_media_parent(tmp_path):
-    window = MainWindow()
+    window = MainWindow(ui_language="zh-Hans")
     media_path = tmp_path / "movie.mp4"
     media_path.write_bytes(b"")
 
@@ -703,7 +736,7 @@ def test_output_directory_setting_is_removed_and_uses_media_parent(tmp_path):
 
 
 def test_add_files_dialog_reuses_last_media_directory(tmp_path, monkeypatch):
-    window = MainWindow()
+    window = MainWindow(ui_language="zh-Hans")
     first_dir = tmp_path / "first"
     second_dir = tmp_path / "second"
     first_dir.mkdir()
@@ -742,7 +775,7 @@ def test_add_files_dialog_reuses_last_media_directory(tmp_path, monkeypatch):
 
 
 def test_add_files_dialog_falls_back_when_last_directory_is_missing(tmp_path, monkeypatch):
-    window = MainWindow()
+    window = MainWindow(ui_language="zh-Hans")
     missing_dir = tmp_path / "missing"
     window.last_file_dialog_dir = missing_dir
     calls: list[str] = []
@@ -762,7 +795,7 @@ def test_add_files_dialog_falls_back_when_last_directory_is_missing(tmp_path, mo
 
 
 def test_queue_uses_distinct_media_type_icons(tmp_path):
-    window = MainWindow()
+    window = MainWindow(ui_language="zh-Hans")
     video_path = tmp_path / "movie.mp4"
     audio_path = tmp_path / "voice.mp3"
     video_path.write_bytes(b"")
@@ -777,7 +810,7 @@ def test_queue_uses_distinct_media_type_icons(tmp_path):
 
 
 def test_queue_status_column_embeds_processing_progress(tmp_path):
-    window = MainWindow()
+    window = MainWindow(ui_language="zh-Hans")
     media_path = tmp_path / "movie.mp4"
     media_path.write_bytes(b"")
     window.add_paths([media_path])
@@ -808,7 +841,7 @@ def test_queue_status_column_embeds_processing_progress(tmp_path):
 
 
 def test_empty_queue_guides_user_and_hides_blank_table(tmp_path):
-    window = MainWindow()
+    window = MainWindow(ui_language="zh-Hans")
 
     assert not window.empty_state.isHidden()
     assert window.table.isHidden()
@@ -839,7 +872,7 @@ def test_empty_queue_guides_user_and_hides_blank_table(tmp_path):
 
 
 def test_model_size_combo_controls_internal_model_path():
-    window = MainWindow()
+    window = MainWindow(ui_language="zh-Hans")
 
     assert not hasattr(window, "model_edit")
     assert not hasattr(window, "aligner_edit")
@@ -854,7 +887,7 @@ def test_model_size_combo_controls_internal_model_path():
 
 
 def test_language_combo_controls_asr_language():
-    window = MainWindow()
+    window = MainWindow(ui_language="zh-Hans")
 
     assert window.language_combo.window() is window
     assert window.language_combo.currentText() == "自动识别"
@@ -890,7 +923,7 @@ def test_language_combo_controls_asr_language():
 
 
 def test_technical_settings_open_in_advanced_dialog():
-    window = MainWindow()
+    window = MainWindow(ui_language="zh-Hans")
 
     assert window.advanced_button.isCheckable() is False
     assert window.advanced_dialog.windowTitle() == "高级设置"
@@ -914,7 +947,7 @@ def test_technical_settings_open_in_advanced_dialog():
 
 
 def test_secondary_explanations_use_tooltips():
-    window = MainWindow()
+    window = MainWindow(ui_language="zh-Hans")
 
     assert window.show_technical_log_check.text() == "显示详细日志"
     assert "关键进度" in window.show_technical_log_check.toolTip()
@@ -940,7 +973,7 @@ def test_secondary_explanations_use_tooltips():
 
 
 def test_queue_actions_follow_file_statuses(tmp_path):
-    window = MainWindow()
+    window = MainWindow(ui_language="zh-Hans")
     media_path = tmp_path / "movie.mp4"
     media_path.write_bytes(b"")
     window.add_paths([media_path])
@@ -969,7 +1002,7 @@ def test_queue_actions_follow_file_statuses(tmp_path):
 
 
 def test_status_icon_styles_cover_processing_warning_and_error():
-    window = MainWindow()
+    window = MainWindow(ui_language="zh-Hans")
 
     window.set_status_icon("...", "processing")
     assert window.status_icon_label.property("state") == "processing"
@@ -987,7 +1020,7 @@ def test_status_icon_styles_cover_processing_warning_and_error():
 
 
 def test_gui_uses_presets_instead_of_precise_numeric_tuning():
-    window = MainWindow()
+    window = MainWindow(ui_language="zh-Hans")
 
     assert window.advanced_dialog.findChildren(QSpinBox) == []
     assert [window.chunk_seconds_combo.itemText(index) for index in range(window.chunk_seconds_combo.count())] == [
@@ -1005,7 +1038,7 @@ def test_gui_uses_presets_instead_of_precise_numeric_tuning():
 
 
 def test_caption_style_preset_controls_line_lengths():
-    window = MainWindow()
+    window = MainWindow(ui_language="zh-Hans")
 
     window.caption_preset_combo.setCurrentText("短句")
     options = window.options()

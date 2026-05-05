@@ -12,6 +12,26 @@ UI_LANGUAGE_OPTIONS = [
     ("ko", "한국어"),
     ("es", "Español"),
 ]
+SUPPORTED_UI_LANGUAGES = {code for code, _label in UI_LANGUAGE_OPTIONS}
+
+
+def ui_language_from_locale(locale_name: str | None) -> str:
+    normalized = (locale_name or "").strip().replace("-", "_").lower()
+    language, _separator, region = normalized.partition("_")
+
+    if language == "zh":
+        if region in {"tw", "hk", "mo"} or "hant" in normalized:
+            return "zh-Hant"
+        return "zh-Hans"
+    if language in {"en", "ja", "ko", "es"}:
+        return language
+    return DEFAULT_UI_LANGUAGE
+
+
+def resolve_initial_ui_language(saved_language: object | None, locale_name: str | None) -> str:
+    if isinstance(saved_language, str) and saved_language in SUPPORTED_UI_LANGUAGES:
+        return saved_language
+    return ui_language_from_locale(locale_name)
 
 TEXT: dict[str, dict[str, str]] = {
     "zh-Hans": {

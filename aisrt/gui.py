@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 import sys
 
-from PyQt6.QtCore import QSize, Qt, QThread, QTimer, QUrl
+from PyQt6.QtCore import QLocale, QSettings, QSize, Qt, QThread, QTimer, QUrl
 from PyQt6.QtGui import QAction, QDesktopServices, QGuiApplication, QIcon
 from PyQt6.QtWidgets import (
     QApplication,
@@ -54,9 +54,9 @@ from .gui_assets import (
     resolve_ui_font_family,
 )
 from .gui_i18n import (
-    DEFAULT_UI_LANGUAGE,
     UI_LANGUAGE_OPTIONS,
     format_diagnostics_for_ui,
+    resolve_initial_ui_language,
     technical_log_text,
     tr,
     user_log_text,
@@ -140,12 +140,21 @@ TRANSLATION_MODEL_PRESETS = [
     ("translation_model_fast", "fast"),
 ]
 STATUS_ROLE = Qt.ItemDataRole.UserRole
+UI_LANGUAGE_SETTING_KEY = "ui_language"
 
 
 class MainWindow(QMainWindow):
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        ui_language: str | None = None,
+        ui_language_settings: QSettings | None = None,
+        system_locale_name: str | None = None,
+    ) -> None:
         super().__init__()
         apply_application_font()
+        self.ui_language_settings = None
+        if ui_language is None:
+            self.ui_language_settings = ui_language_settings or QSettings("AISRT", "AISRT")
         self.files: list[Path] = []
         self.thread: QThread | None = None
         self.worker: SubtitleWorker | None = None
@@ -154,7 +163,15 @@ class MainWindow(QMainWindow):
         self.translation_running = False
         self.ui_running = False
         self.full_log: list[str] = []
-        self.ui_language = DEFAULT_UI_LANGUAGE
+        saved_ui_language = (
+            self.ui_language_settings.value(UI_LANGUAGE_SETTING_KEY)
+            if self.ui_language_settings is not None
+            else ui_language
+        )
+        self.ui_language = resolve_initial_ui_language(
+            saved_ui_language,
+            system_locale_name or QLocale.system().name(),
+        )
         self.status_phase_key = "status_ready"
         self.status_current_key = "status_add_files"
         self.status_current_values: dict[str, object] = {}
@@ -260,6 +277,8 @@ class MainWindow(QMainWindow):
         if not isinstance(language, str) or language == self.ui_language:
             return
         self.ui_language = language
+        if self.ui_language_settings is not None:
+            self.ui_language_settings.setValue(UI_LANGUAGE_SETTING_KEY, language)
         self.apply_language()
 
     def center_dialog_on_parent(self, dialog: QWidget) -> None:
@@ -1617,6 +1636,12 @@ class MainWindow(QMainWindow):
             self.file_count_label.setText(f"{count} {'file' if count == 1 else 'files'}")
         elif self.ui_language == "zh-Hant":
             self.file_count_label.setText(f"{count} 個檔案")
+        elif self.ui_language == "ja":
+            self.file_count_label.setText(f"{count} 件")
+        elif self.ui_language == "ko":
+            self.file_count_label.setText(f"{count}개 파일")
+        elif self.ui_language == "es":
+            self.file_count_label.setText(f"{count} archivo" if count == 1 else f"{count} archivos")
         else:
             self.file_count_label.setText(f"{count} 个文件")
         self.empty_state.setVisible(not has_files)

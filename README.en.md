@@ -109,7 +109,7 @@ The GUI is designed for regular users and keeps only common actions on the main 
 - Enable translation: when checked, the main button becomes "Recognize + Translate", writes original ASR subtitles first, then outputs subtitles in the translation language.
 - File queue: shows file name, status, progress, and subtitle directory.
 - Progress hints: ASR recognition and subtitle translation show estimated remaining time in `minutes:seconds` format.
-- Language settings: UI language changes only app text; subtitle source language controls ASR; translation language controls translated subtitles.
+- Language settings: UI language follows the system language by default and remembers manual changes; subtitle source language controls ASR; translation language controls translated subtitles.
 - Common settings: subtitle source language, whether translation is enabled, translation language, run mode, and model size.
 - Advanced settings: device, audio chunk size, subtitle style, overwrite behavior, and local cache.
 - Run log: shows key progress, remaining time, and issue hints by default; detailed logs can be enabled when troubleshooting.
@@ -119,7 +119,7 @@ Default behavior:
 
 - Subtitles are saved next to each media file.
 - Existing `.srt` files are not overwritten unless confirmed.
-- The UI supports Simplified Chinese, Traditional Chinese, English, Japanese, Korean, and Spanish.
+- The UI supports Simplified Chinese, Traditional Chinese, English, Japanese, Korean, and Spanish. On first launch it matches the system language when supported, then remembers manual changes.
 - Subtitle source and translation language presets use common languages supported by both ASR and local translation, such as Simplified Chinese, Traditional Chinese, English, Japanese, Korean, Spanish, French, German, Portuguese, Russian, and Arabic.
 - The current run remembers the last media directory used for adding files.
 - Icons are reserved for add files and start processing; the translation toggle, stop, and translate existing SRT actions stay text-only.
