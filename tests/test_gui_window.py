@@ -32,8 +32,10 @@ from aisrt.gui import (
     APP_PRODUCT_SUBTITLE,
     FILE_ICON_PATH,
     FONT_FAMILY_CANDIDATES,
+    LANGUAGE_PRESETS,
     MainWindow,
     PLAY_ICON_PATH,
+    TRANSLATION_TARGET_PRESETS,
     VIDEO_ICON_PATH,
     configure_high_dpi_scaling,
     load_add_file_icon,
@@ -241,6 +243,35 @@ def test_i18n_dictionaries_have_complete_keys():
     assert languages == ["zh-Hans", "zh-Hant", "en"]
     for language in languages:
         assert set(TEXT[language]) == reference
+
+
+def test_gui_language_presets_use_asr_translation_intersection():
+    assert [value for _label_key, value in LANGUAGE_PRESETS] == [
+        "",
+        "Chinese",
+        "English",
+        "Japanese",
+        "Korean",
+        "Spanish",
+        "French",
+        "German",
+        "Portuguese",
+        "Russian",
+        "Arabic",
+    ]
+    assert [value for _label_key, value in TRANSLATION_TARGET_PRESETS] == [
+        "简体中文",
+        "繁體中文",
+        "English",
+        "Japanese",
+        "Korean",
+        "Spanish",
+        "French",
+        "German",
+        "Portuguese",
+        "Russian",
+        "Arabic",
+    ]
 
 
 def test_english_ui_has_no_untranslated_visible_copy(tmp_path):
@@ -740,16 +771,17 @@ def test_language_combo_controls_asr_language():
         "英语",
         "日语",
         "韩语",
-        "粤语",
         "西班牙语",
         "法语",
         "德语",
         "葡萄牙语",
         "俄语",
-        "意大利语",
-        "泰语",
-        "越南语",
+        "阿拉伯语",
     ]
+    assert "粤语" not in labels
+    assert "意大利语" not in labels
+    assert "泰语" not in labels
+    assert "越南语" not in labels
     assert "马其顿语" not in labels
     assert "波斯语" not in labels
 

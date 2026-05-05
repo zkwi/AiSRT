@@ -120,6 +120,7 @@ Default behavior:
 - Subtitles are saved next to each media file.
 - Existing `.srt` files are not overwritten unless confirmed.
 - The UI supports Simplified Chinese, Traditional Chinese, and English.
+- Subtitle source and translation language presets use common languages supported by both ASR and local translation, such as Simplified Chinese, Traditional Chinese, English, Japanese, Korean, Spanish, French, German, Portuguese, Russian, and Arabic.
 - The current run remembers the last media directory used for adding files.
 - Icons are reserved for add files and start processing; the translation toggle, stop, and translate existing SRT actions stay text-only.
 
@@ -139,7 +140,7 @@ Recommended settings:
 AISRT does not call third-party translation APIs and does not automatically upload subtitle files. The GUI's "Translate Existing SRT" action opens a local translation dialog:
 
 1. Choose an existing `.srt` file.
-2. Choose the translation language from common presets.
+2. Choose the translation language from common presets shared by recognition and translation.
 3. Choose quality or fast mode, then start translation.
 
 Only subtitle text is sent to the local HY-MT model; AISRT preserves and merges SRT numbering and timestamps in code. Quality mode uses the official HY-MT 1.8B model by default. Fast mode uses a lightweight quantized model for quick previews. Translation reuses the existing `.venv` PyTorch/CUDA stack, so users do not need to install another Python or CUDA environment.
@@ -202,7 +203,7 @@ Common options:
 | `--model-size` | ASR model size. Default: `1.7B`. Choices: `1.7B` or `0.6B`. |
 | `--model` | Custom ASR model path or Hugging Face ID. Overrides `--model-size`. |
 | `--aligner` | Forced-alignment model path or Hugging Face ID. |
-| `--language` | Recognition language. Default: `auto`. Examples: `English`, `Chinese`, `Korean`. |
+| `--language` | Recognition language. Default: `auto`. GUI presets include `English`, `Chinese`, `Japanese`, `Korean`, `Spanish`, `French`, `German`, and other common shared languages; CLI can pass any language supported by the model. |
 | `-c, --context` | Optional context prompt, useful for titles, character names, people, places, and domain terms. |
 | `-d, --duration` | Target ASR chunk length in seconds. Default: 45. Try 30 for quiet audio or sparse dialogue. |
 | `--device` | Inference device. Default: `auto`. Common values: `auto`, `cuda:0`, `cpu`. |

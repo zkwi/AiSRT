@@ -75,27 +75,40 @@ from .local_asr import (
     DEFAULT_CHUNK_SECONDS,
     DEFAULT_LANGUAGE,
     DEFAULT_MODEL_SIZE,
+    SUPPORTED_ASR_LANGUAGES,
     resolve_asr_model,
 )
-from .translate_cli import default_output_path
+from .local_translate import TARGET_LANGUAGE_OPTIONS
+from .translate_cli import default_output_path, language_suffix
 from .translate_worker import SrtTranslationWorker, TranslationOptions
 
 
+COMMON_LANGUAGE_PRESETS = [
+    (
+        "asr_chinese",
+        "Chinese",
+        [("translation_target_zh", "简体中文"), ("translation_target_zh_hant", "繁體中文")],
+    ),
+    ("asr_english", "English", [("translation_target_en", "English")]),
+    ("asr_japanese", "Japanese", [("translation_target_ja", "Japanese")]),
+    ("asr_korean", "Korean", [("translation_target_ko", "Korean")]),
+    ("asr_spanish", "Spanish", [("translation_target_es", "Spanish")]),
+    ("asr_french", "French", [("translation_target_fr", "French")]),
+    ("asr_german", "German", [("translation_target_de", "German")]),
+    ("asr_portuguese", "Portuguese", [("translation_target_pt", "Portuguese")]),
+    ("asr_russian", "Russian", [("translation_target_ru", "Russian")]),
+    ("asr_arabic", "Arabic", [("translation_target_ar", "Arabic")]),
+]
+TRANSLATION_TARGET_SUFFIXES = {suffix for _label, suffix in TARGET_LANGUAGE_OPTIONS}
+COMMON_SUPPORTED_LANGUAGE_PRESETS = [
+    (label_key, asr_language, target_presets)
+    for label_key, asr_language, target_presets in COMMON_LANGUAGE_PRESETS
+    if asr_language in SUPPORTED_ASR_LANGUAGES
+    and all(language_suffix(target_language) in TRANSLATION_TARGET_SUFFIXES for _target_key, target_language in target_presets)
+]
 LANGUAGE_PRESETS = [
     ("asr_auto", DEFAULT_LANGUAGE),
-    ("asr_chinese", "Chinese"),
-    ("asr_english", "English"),
-    ("asr_japanese", "Japanese"),
-    ("asr_korean", "Korean"),
-    ("asr_cantonese", "Cantonese"),
-    ("asr_spanish", "Spanish"),
-    ("asr_french", "French"),
-    ("asr_german", "German"),
-    ("asr_portuguese", "Portuguese"),
-    ("asr_russian", "Russian"),
-    ("asr_italian", "Italian"),
-    ("asr_thai", "Thai"),
-    ("asr_vietnamese", "Vietnamese"),
+    *((label_key, asr_language) for label_key, asr_language, _target_presets in COMMON_SUPPORTED_LANGUAGE_PRESETS),
 ]
 PROFILE_PRESETS = [
     ("profile_recommended", "recommended"),
@@ -118,17 +131,9 @@ CAPTION_PRESETS = [
     ("caption_long", (28, 56)),
 ]
 TRANSLATION_TARGET_PRESETS = [
-    ("translation_target_zh", "简体中文"),
-    ("translation_target_zh_hant", "繁體中文"),
-    ("translation_target_en", "English"),
-    ("translation_target_ja", "Japanese"),
-    ("translation_target_ko", "Korean"),
-    ("translation_target_fr", "French"),
-    ("translation_target_de", "German"),
-    ("translation_target_es", "Spanish"),
-    ("translation_target_pt", "Portuguese"),
-    ("translation_target_ru", "Russian"),
-    ("translation_target_ar", "Arabic"),
+    target_preset
+    for _label_key, _asr_language, target_presets in COMMON_SUPPORTED_LANGUAGE_PRESETS
+    for target_preset in target_presets
 ]
 TRANSLATION_MODEL_PRESETS = [
     ("translation_model_quality", "quality"),
