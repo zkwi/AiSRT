@@ -10,7 +10,7 @@ Keywords: local AI subtitle generator, video to SRT, audio to SRT, multilingual 
 
 ## Preview
 
-![AISRT local AI subtitle generator main window for video to SRT, audio to SRT, multilingual ASR, and local translation](docs/assets/aisrt-main-window.png)
+![AISRT local AI subtitle generator main window for video to SRT, audio to SRT, multilingual ASR, and local translation](docs/assets/aisrt-main-window-en.png)
 
 ## Features
 
