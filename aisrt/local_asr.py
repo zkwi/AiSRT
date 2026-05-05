@@ -348,6 +348,19 @@ def merge_language_names(languages: list[str]) -> str:
     return ",".join(result)
 
 
+def format_remaining_time(seconds: float) -> str:
+    seconds = max(0, int(round(seconds)))
+    minutes, remaining_seconds = divmod(seconds, 60)
+    return f"{minutes:02d}:{remaining_seconds:02d}"
+
+
+def estimate_remaining_time(elapsed_seconds: float, completed: int, total: int) -> str:
+    if completed <= 0 or total <= 0 or completed >= total:
+        return "00:00"
+    average_seconds = elapsed_seconds / completed
+    return format_remaining_time(average_seconds * (total - completed))
+
+
 def transcribe_to_srt_text(
     model: Any,
     media_path: str,
@@ -377,6 +390,7 @@ def transcribe_to_srt_text(
     captions: list[Caption] = []
 
     indexed_chunks = list(enumerate(chunks, start=1))
+    overall_started_at = time.perf_counter()
     for batch in chunked(indexed_chunks, batch_size):
         if should_stop and should_stop():
             raise ProcessingCancelled("用户已取消处理。")
@@ -438,9 +452,10 @@ def transcribe_to_srt_text(
                         shifted_align_result,
                         max_caption_chars=max_caption_chars,
                     )
-                )
+            )
 
             percent = int(index / total * 100)
-            log(f"[ASR] {index}/{total} 完成，用时 {elapsed:.1f}s，总进度 {percent}%")
+            remaining = estimate_remaining_time(time.perf_counter() - overall_started_at, index, total)
+            log(f"[ASR] {index}/{total} 完成，用时 {elapsed:.1f}s，总进度 {percent}%，剩余 {remaining}")
 
     return merge_language_names(languages), "".join(transcript_parts), format_srt(captions)

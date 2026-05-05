@@ -47,6 +47,11 @@ QLabel#SectionTitle {
     color: #111827;
 }
 
+QLabel#HeaderFieldLabel {
+    color: #6B7280;
+    font-size: 12pt;
+}
+
 QLabel#MutedText {
     color: #6B7280;
 }

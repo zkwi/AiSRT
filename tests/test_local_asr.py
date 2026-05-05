@@ -22,7 +22,9 @@ from aisrt.local_asr import (
     DEFAULT_MODEL_SIZE,
     SUPPORTED_ASR_LANGUAGES,
     align_items_to_text_pieces,
+    estimate_remaining_time,
     fallback_captions_for_chunk,
+    format_remaining_time,
     resolve_asr_language,
     resolve_asr_model,
     transcribe_to_srt_text,
@@ -105,6 +107,12 @@ def test_fallback_captions_skip_empty_text():
     assert fallback_captions_for_chunk("", 10.0, 5.0) == []
 
 
+def test_remaining_time_helpers_format_minutes_and_seconds():
+    assert format_remaining_time(65.4) == "01:05"
+    assert estimate_remaining_time(30.0, completed=1, total=3) == "01:00"
+    assert estimate_remaining_time(30.0, completed=3, total=3) == "00:00"
+
+
 def install_fake_qwen_utils(monkeypatch, chunks):
     qwen_package = types.ModuleType("qwen_asr")
     qwen_package.__path__ = []
@@ -140,6 +148,7 @@ def test_transcribe_to_srt_text_falls_back_when_timestamps_are_missing(monkeypat
     assert language == "Japanese"
     assert transcript == "今日はいい天気ですね。"
     assert any("无时间戳" in message for message in messages)
+    assert any("总进度 100%，剩余 00:00" in message for message in messages)
     assert len(captions) == 1
     assert captions[0].start_ms == 10000
     assert captions[0].end_ms == 12000

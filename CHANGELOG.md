@@ -10,6 +10,9 @@ This project follows a simple changelog style for now: group user-visible change
 - Improved the GUI translation-enabled processing flow so original ASR subtitles are kept when local translation loading or translation fails.
 - Optimized README and docs Wiki copy for GitHub searchability around local AI subtitle generation, SRT translation, GUI, and CLI workflows.
 - Improved translation progress and completion messages in the GUI, plus localized target-language suffix handling and package metadata.
+- Clarified GUI language controls as UI language, subtitle source language, and translation language; made translation language selectors dropdown-only and removed the confusing context field from the main window.
+- Added estimated remaining time to ASR and translation progress output in `minutes:seconds` format.
+- Renamed the translation-enabled primary action to "Recognize + Translate" and tightened common-settings label spacing.
 
 ## 0.1.1 - 2026-05-01
 

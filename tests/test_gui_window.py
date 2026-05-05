@@ -123,6 +123,7 @@ def test_main_window_uses_native_styles_and_system_font():
     assert all(value % 2 == 0 for value in qss_font_sizes)
     assert "QLabel#WindowTitle {\n    font-size: 18pt;" in APP_QSS
     assert "QLabel#SectionTitle {\n    font-size: 16pt;" in APP_QSS
+    assert "QLabel#HeaderFieldLabel" in APP_QSS
     assert "QComboBox:disabled" in APP_QSS
     assert "#RootWidget QLabel," in APP_QSS
     assert "#RootWidget QComboBox," in APP_QSS
@@ -168,6 +169,8 @@ def test_ui_language_switch_supports_simplified_traditional_and_english(tmp_path
     window = MainWindow()
 
     assert window.ui_language_combo.currentData() == "zh-Hans"
+    assert window.ui_language_label.text() == "界面语言"
+    assert "不影响识别字幕语言或翻译语言" in window.ui_language_combo.toolTip()
     assert [
         window.ui_language_combo.itemData(index)
         for index in range(window.ui_language_combo.count())
@@ -181,18 +184,22 @@ def test_ui_language_switch_supports_simplified_traditional_and_english(tmp_path
     assert window.title_label.text() == "AI Subtitle Assistant"
     assert "Multilingual recognition" in window.subtitle_label.text()
     assert window.add_files_button.text() == "Add Files"
+    assert window.ui_language_label.text() == "UI language"
+    assert "not recognition or translation languages" in window.ui_language_combo.toolTip()
     assert window.translation_button.text() == "Translate Existing SRT"
     assert window.start_button.text() == "Start"
     assert window.file_queue_title_label.text() == "File Queue"
     assert window.empty_title_label.text() == "No files added"
     assert window.table.horizontalHeaderItem(2).text() == "Subtitle Folder"
     assert window.settings_title_label.text() == "Common Settings"
+    assert window.recognition_language_label.text() == "Subtitle source language"
     assert window.advanced_dialog.windowTitle() == "Advanced Settings"
     assert window.translation_dialog.windowTitle() == "SRT Translation"
     assert window.clear_log_button.text() == "Clear Log"
     assert window.current_label.text() == "Add files to begin"
     assert window.file_count_label.text() == "0 files"
-    assert "Optional:" in window.context_edit.placeholderText()
+    assert not hasattr(window, "context_edit")
+    assert not hasattr(window, "context_label")
     assert window.language_combo.currentData() == "English"
     assert window.language_combo.currentText() == "English"
 
@@ -216,6 +223,8 @@ def test_ui_language_switch_supports_simplified_traditional_and_english(tmp_path
     assert window.windowTitle() == "AI 大模型字幕助手"
     assert "多語言辨識" in window.subtitle_label.text()
     assert window.add_files_button.text() == "新增檔案"
+    assert window.ui_language_label.text() == "介面語言"
+    assert window.recognition_language_label.text() == "辨識字幕語言"
     assert window.translation_button.text() == "翻譯既有 SRT"
     assert window.table.horizontalHeaderItem(2).text() == "字幕目錄"
     assert window.table.item(0, 1).text() == ""
@@ -252,10 +261,12 @@ def test_english_ui_has_no_untranslated_visible_copy(tmp_path):
     assert window.progress_detail_text("已处理 2/3") == "Processed 2/3"
     assert window.translation_progress_detail_text("正在加载翻译模型") == "Loading translation model"
     assert window.translation_progress_detail_text("翻译字幕 45%") == "Translating subtitles 45%"
+    assert window.progress_detail_text("识别字幕 45% 剩余 01:20") == "Recognizing subtitles 45% (01:20 remaining)"
+    assert window.translation_progress_detail_text("翻译字幕 45% 剩余 01:20") == "Translating subtitles 45% (01:20 remaining)"
     assert window.translation_progress_detail_text("翻译完成") == "Translation complete"
 
     window.append_log("[START] 开始处理")
-    window.append_log("[START] 开始处理（含翻译）")
+    window.append_log("[START] 开始识别并翻译")
     window.append_log("[START] 开始翻译字幕")
     window.append_log("[TRANSLATE OK] movie.zh.srt")
     window.append_log("[CANCEL] 已请求停止处理")
@@ -265,7 +276,7 @@ def test_english_ui_has_no_untranslated_visible_copy(tmp_path):
 
     log_text = window.log_box.toPlainText()
     assert "Processing started." in log_text
-    assert "Processing and translation started." in log_text
+    assert "Recognition and translation started." in log_text
     assert "Translation started." in log_text
     assert "Translation complete" in log_text
     assert "Cancelled: Stop requested" in log_text
@@ -286,10 +297,11 @@ def test_english_technical_log_localizes_known_worker_messages():
     window.append_log("[AUDIO] 提取 16k 单声道 WAV: movie.mp4")
     window.append_log("[ASR] 音频时长约 4.5 分钟，分为 7 个识别块")
     window.append_log("[ASR] 3/52 完成，用时 2.2s，总进度 5%")
+    window.append_log("[ASR] 4/52 完成，用时 2.1s，总进度 8%，剩余 01:20")
     window.append_log("[ASR] 4/52 开始 2.2-3.0 分钟")
     window.append_log("[ASR] 5/52 无时间戳，使用该识别块时间范围生成粗略字幕")
     window.append_log("[ASR] 6/52 无识别文本，跳过字幕生成")
-    window.append_log("[TRANSLATE] 1/2 完成，总进度 50%")
+    window.append_log("[TRANSLATE] 1/2 完成，总进度 50%，剩余 00:30")
     window.append_log("[ERROR] movie.mp4: 翻译失败，已保留原始字幕: mock error")
 
     log_text = window.log_box.toPlainText()
@@ -297,10 +309,11 @@ def test_english_technical_log_localizes_known_worker_messages():
     assert "[AUDIO] Extracting 16k mono WAV: movie.mp4" in log_text
     assert "[ASR] Audio duration about 4.5 min; split into 7 recognition chunks" in log_text
     assert "[ASR] 3/52 completed in 2.2s; overall progress 5%" in log_text
+    assert "[ASR] 4/52 completed in 2.1s; overall progress 8%; 01:20 remaining" in log_text
     assert "[ASR] 4/52 started: 2.2-3.0 min" in log_text
     assert "[ASR] 5/52 has no timestamps; using the chunk time range for rough subtitles" in log_text
     assert "[ASR] 6/52 has no recognized text; skipping subtitle generation" in log_text
-    assert "Translating subtitles: 50%" in log_text
+    assert "Translating subtitles: 50% (00:30 remaining)" in log_text
     assert "movie.mp4: Translation failed; original subtitles kept: mock error" in log_text
     assert not HAN_RE.search(log_text)
 
@@ -337,8 +350,8 @@ def test_subtitle_translation_dialog_uses_local_hymt_flow(tmp_path):
     assert window.translation_source_label.text() == "SRT 文件"
     assert window.translation_browse_button.text() == "选择 SRT"
     assert window.translation_output_label.text() == "输出文件"
-    assert window.translation_target_label.text() == "目标语言"
-    assert window.translation_target_combo.isEditable()
+    assert window.translation_target_label.text() == "翻译语言"
+    assert not window.translation_target_combo.isEditable()
     assert window.translation_target_combo.currentData() == "简体中文"
     assert "英语" in [window.translation_target_combo.itemText(index) for index in range(window.translation_target_combo.count())]
     assert window.translation_model_mode_combo.currentData() == "quality"
@@ -359,7 +372,7 @@ def test_subtitle_translation_dialog_uses_local_hymt_flow(tmp_path):
     window.ui_language_combo.setCurrentText("English")
     assert window.translation_button.text() == "Translate Existing SRT"
     assert window.translation_browse_button.text() == "Choose SRT"
-    assert window.translation_target_label.text() == "Target language"
+    assert window.translation_target_label.text() == "Translation language"
     assert window.translation_start_button.text() == "Start Translation"
     assert window.translation_model_mode_combo.itemText(0) == "Quality"
 
@@ -377,11 +390,6 @@ def test_translation_dialog_handles_targets_and_progress_state(tmp_path):
         window.refresh_translation_output_preview()
         assert window.current_translation_target() == target
         assert window.translation_output_edit.text().endswith(f"movie.{suffix}.srt")
-
-    window.translation_target_combo.setEditText("Klingon")
-    window.refresh_translation_output_preview()
-    assert window.current_translation_target() == "Klingon"
-    assert window.translation_output_edit.text().endswith("movie.klingon.srt")
 
     assert window.translation_progress_bar.isHidden()
     window.set_translation_running(True)
@@ -408,13 +416,16 @@ def test_main_window_integrates_translation_into_main_flow(tmp_path):
 
     assert window.enable_translation_label.text() == "是否启用翻译"
     assert window.enable_translation_check.text() == "启用"
+    assert window.recognition_language_label.text() == "识别字幕语言"
     assert not window.enable_translation_check.isChecked()
     assert window.start_button.text() == "开始处理"
-    assert window.output_language_label.text() == "目标语言"
+    assert window.output_language_label.text() == "翻译语言"
     assert not window.output_language_combo.isEnabled()
+    assert not window.output_language_combo.isEditable()
     assert window.output_language_combo.currentData() == "简体中文"
     assert "英语" in [window.output_language_combo.itemText(index) for index in range(window.output_language_combo.count())]
     assert not hasattr(window, "start_translate_button")
+    assert not hasattr(window, "context_edit")
 
     media_path = tmp_path / "movie.mp4"
     media_path.write_bytes(b"")
@@ -422,9 +433,11 @@ def test_main_window_integrates_translation_into_main_flow(tmp_path):
 
     asr_options = window.options()
     assert not asr_options.translate_after_asr
+    assert asr_options.context == ""
 
     window.enable_translation_check.setChecked(True)
-    assert window.start_button.text() == "处理并翻译"
+    assert window.start_button.text() == "识别并翻译"
+    assert "识别原始字幕" in window.start_button.toolTip()
     assert window.output_language_combo.isEnabled()
     window.set_combo_data(window.output_language_combo, "Spanish")
 
@@ -432,15 +445,13 @@ def test_main_window_integrates_translation_into_main_flow(tmp_path):
     assert translate_options.translate_after_asr
     assert translate_options.translation_target_language == "Spanish"
 
-    window.output_language_combo.setCurrentText("Italian")
-    assert window.options().translation_target_language == "Italian"
     window.ui_language_combo.setCurrentText("English")
-    assert window.output_language_combo.currentText() == "Italian"
-    assert window.options().translation_target_language == "Italian"
+    assert window.output_language_combo.currentText() == "Spanish"
+    assert window.options().translation_target_language == "Spanish"
     assert window.enable_translation_label.text() == "Enable translation?"
     assert window.enable_translation_check.text() == "Enable"
-    assert window.output_language_label.text() == "Target language"
-    assert window.start_button.text() == "Start + Translate"
+    assert window.output_language_label.text() == "Translation language"
+    assert window.start_button.text() == "Recognize + Translate"
 
     window.set_running(True)
     assert window.start_button.isHidden()
@@ -452,7 +463,7 @@ def test_main_window_integrates_translation_into_main_flow(tmp_path):
     assert not window.start_button.isHidden()
     assert window.enable_translation_check.isEnabled()
     assert window.output_language_combo.isEnabled()
-    assert window.start_button.text() == "Start + Translate"
+    assert window.start_button.text() == "Recognize + Translate"
 
     window.close()
 

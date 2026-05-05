@@ -92,8 +92,8 @@ def build_parser() -> argparse.ArgumentParser:
         description="使用本地 HY-MT 大模型翻译 SRT 字幕。",
     )
     parser.add_argument("input", help="待翻译的 .srt 文件")
-    parser.add_argument("--to", dest="target_language", default=DEFAULT_TARGET_LANGUAGE, help="目标语言，默认简体中文")
-    parser.add_argument("--output", help="输出 SRT 路径，默认在原文件旁生成目标语言后缀")
+    parser.add_argument("--to", dest="target_language", default=DEFAULT_TARGET_LANGUAGE, help="翻译语言，默认简体中文")
+    parser.add_argument("--output", help="输出 SRT 路径，默认在原文件旁生成翻译语言后缀")
     parser.add_argument("--overwrite", action="store_true", help="覆盖已有输出")
     parser.add_argument(
         "--model-mode",

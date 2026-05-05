@@ -16,6 +16,13 @@ def test_file_progress_from_asr_log():
     )
 
 
+def test_file_progress_from_asr_log_with_remaining_time():
+    assert file_progress_from_log_message("[ASR] 10/20 完成，用时 1.0s，总进度 50%，剩余 01:20") == (
+        55,
+        "识别字幕 50% 剩余 01:20",
+    )
+
+
 def test_file_progress_from_ok_log():
     assert file_progress_from_log_message("[OK] movie.srt (Japanese)") == (100, "完成")
 

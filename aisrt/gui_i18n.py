@@ -14,14 +14,15 @@ TEXT: dict[str, dict[str, str]] = {
     "zh-Hans": {
         "product_name": "AI 大模型字幕助手",
         "product_subtitle": "大模型 ASR 驱动 · 多语言识别 · 精准时间对齐",
-        "ui_language_tooltip": "切换界面语言",
+        "ui_language_label": "界面语言",
+        "ui_language_tooltip": "只切换软件界面文字，不影响识别字幕语言或翻译语言",
         "add_files": "添加文件",
         "translate_srt": "翻译已有 SRT",
         "translate_srt_tooltip": "打开本地 SRT 翻译工具，处理已经生成的字幕文件",
         "start": "开始处理",
-        "start_tooltip": "按当前设置处理文件队列；勾选翻译后会同时输出目标语言字幕",
-        "start_with_translation": "处理并翻译",
-        "start_with_translation_tooltip": "生成原始字幕后继续输出目标语言字幕",
+        "start_tooltip": "按当前设置处理文件队列；勾选翻译后会同时输出翻译语言字幕",
+        "start_with_translation": "识别并翻译",
+        "start_with_translation_tooltip": "识别原始字幕后继续输出翻译语言字幕",
         "stop": "停止",
         "open_output_folder": "打开输出文件夹",
         "clear_queue": "清空队列",
@@ -37,15 +38,12 @@ TEXT: dict[str, dict[str, str]] = {
         "settings_title": "常用设置",
         "advanced_settings": "高级设置",
         "advanced_tooltip": "设备、音频分块等不常改的选项",
-        "context_label": "上下文",
-        "context_placeholder": "可选：片名、角色名、人名、地名；不确定时留空",
-        "context_tooltip": "提供片名或角色名可帮助模型识别专有名词，不确定时留空",
-        "recognition_language": "识别语言",
-        "recognition_language_tooltip": "默认自动识别；明确知道音频语言时可手动指定",
+        "recognition_language": "识别字幕语言",
+        "recognition_language_tooltip": "视频或音频里的说话语言；默认自动识别",
         "enable_translation_label": "是否启用翻译",
         "enable_translation": "启用",
-        "enable_translation_tooltip": "处理时先生成原始字幕，再输出目标语言字幕",
-        "output_language_tooltip": "启用翻译后生成的目标字幕语言",
+        "enable_translation_tooltip": "处理时先生成原始字幕，再输出翻译语言字幕",
+        "output_language_tooltip": "启用翻译后生成的字幕语言",
         "profile_label": "运行模式",
         "profile_tooltip": "推荐适合大多数情况，低显存会使用更保守的参数",
         "model_size": "模型尺寸",
@@ -120,8 +118,8 @@ TEXT: dict[str, dict[str, str]] = {
         "translation_source_placeholder": "选择要翻译的 .srt 文件",
         "translation_browse": "选择 SRT",
         "translation_browse_tooltip": "选择已有 SRT 字幕文件",
-        "translation_target": "目标语言",
-        "translation_target_tooltip": "选择常用语言，或直接输入其他目标语言",
+        "translation_language": "翻译语言",
+        "translation_target_tooltip": "选择翻译后的字幕语言",
         "translation_model_mode": "模型模式",
         "translation_model_mode_tooltip": "质量优先使用官方模型，快速模式使用轻量模型",
         "translation_output": "输出文件",
@@ -177,7 +175,7 @@ TEXT: dict[str, dict[str, str]] = {
         "log_asr_start": "开始识别字幕。",
         "log_done": "处理结束。",
         "log_start": "开始处理。",
-        "log_start_with_translation": "开始处理并翻译。",
+        "log_start_with_translation": "开始识别并翻译。",
         "log_translation_start": "开始翻译字幕。",
         "log_subtitle_done": "字幕生成完成。",
         "log_stop_requested": "已请求停止处理",
@@ -187,10 +185,13 @@ TEXT: dict[str, dict[str, str]] = {
         "log_audio_extract_wav": "[AUDIO] 提取 16k 单声道 WAV：{name}",
         "log_extract_audio": "正在提取音频：{percent}%",
         "log_recognize": "正在识别字幕：{percent}%",
+        "log_recognize_eta": "正在识别字幕：{percent}%（剩余 {remaining}）",
         "log_translate": "正在翻译字幕：{percent}%",
+        "log_translate_eta": "正在翻译字幕：{percent}%（剩余 {remaining}）",
         "log_asr_audio_chunks": "[ASR] 音频时长约 {minutes} 分钟，分为 {total} 个识别块",
         "log_asr_chunk_started": "[ASR] {index}/{total} 开始：{start}-{end} 分钟",
         "log_asr_chunk_completed": "[ASR] {index}/{total} 完成，用时 {seconds}s，总进度 {percent}%",
+        "log_asr_chunk_completed_eta": "[ASR] {index}/{total} 完成，用时 {seconds}s，总进度 {percent}%，剩余 {remaining}",
         "log_asr_missing_timestamps": "[ASR] {index}/{total} 无时间戳，使用该识别块时间范围生成粗略字幕",
         "log_asr_empty_text": "[ASR] {index}/{total} 无识别文本，跳过字幕生成",
         "progress_cached_audio": "使用缓存音频",
@@ -202,7 +203,9 @@ TEXT: dict[str, dict[str, str]] = {
         "progress_translate": "翻译字幕",
         "progress_extract_audio": "提取音频 {percent}%",
         "progress_recognize": "识别字幕 {percent}%",
+        "progress_recognize_eta": "识别字幕 {percent}%（剩余 {remaining}）",
         "progress_translate_percent": "翻译字幕 {percent}%",
+        "progress_translate_percent_eta": "翻译字幕 {percent}%（剩余 {remaining}）",
         "progress_model_failed": "模型加载失败",
         "progress_cancel_remaining": "已取消后续任务",
         "progress_cancelled": "已取消处理",
@@ -212,14 +215,15 @@ TEXT: dict[str, dict[str, str]] = {
     "zh-Hant": {
         "product_name": "AI 大模型字幕助手",
         "product_subtitle": "大模型 ASR 驅動 · 多語言辨識 · 精準時間對齊",
-        "ui_language_tooltip": "切換介面語言",
+        "ui_language_label": "介面語言",
+        "ui_language_tooltip": "只切換軟體介面文字，不影響辨識字幕語言或翻譯語言",
         "add_files": "新增檔案",
         "translate_srt": "翻譯既有 SRT",
         "translate_srt_tooltip": "開啟本地 SRT 翻譯工具，處理已生成的字幕檔案",
         "start": "開始處理",
-        "start_tooltip": "按目前設定處理檔案佇列；勾選翻譯後會同時輸出目標語言字幕",
-        "start_with_translation": "處理並翻譯",
-        "start_with_translation_tooltip": "生成原始字幕後繼續輸出目標語言字幕",
+        "start_tooltip": "按目前設定處理檔案佇列；勾選翻譯後會同時輸出翻譯語言字幕",
+        "start_with_translation": "辨識並翻譯",
+        "start_with_translation_tooltip": "辨識原始字幕後繼續輸出翻譯語言字幕",
         "stop": "停止",
         "open_output_folder": "開啟輸出資料夾",
         "clear_queue": "清空佇列",
@@ -235,15 +239,12 @@ TEXT: dict[str, dict[str, str]] = {
         "settings_title": "常用設定",
         "advanced_settings": "進階設定",
         "advanced_tooltip": "裝置、音訊分塊等不常調整的選項",
-        "context_label": "上下文",
-        "context_placeholder": "可選：片名、角色名、人名、地名；不確定時留空",
-        "context_tooltip": "提供片名或角色名可幫助模型辨識專有名詞，不確定時留空",
-        "recognition_language": "辨識語言",
-        "recognition_language_tooltip": "預設自動辨識；明確知道音訊語言時可手動指定",
+        "recognition_language": "辨識字幕語言",
+        "recognition_language_tooltip": "影片或音訊裡的說話語言；預設自動辨識",
         "enable_translation_label": "是否啟用翻譯",
         "enable_translation": "啟用",
-        "enable_translation_tooltip": "處理時先生成原始字幕，再輸出目標語言字幕",
-        "output_language_tooltip": "啟用翻譯後生成的目標字幕語言",
+        "enable_translation_tooltip": "處理時先生成原始字幕，再輸出翻譯語言字幕",
+        "output_language_tooltip": "啟用翻譯後生成的字幕語言",
         "profile_label": "執行模式",
         "profile_tooltip": "推薦適合大多數情況，低顯存會使用更保守的參數",
         "model_size": "模型尺寸",
@@ -318,8 +319,8 @@ TEXT: dict[str, dict[str, str]] = {
         "translation_source_placeholder": "選擇要翻譯的 .srt 檔案",
         "translation_browse": "選擇 SRT",
         "translation_browse_tooltip": "選擇已有 SRT 字幕檔案",
-        "translation_target": "目標語言",
-        "translation_target_tooltip": "選擇常用語言，或直接輸入其他目標語言",
+        "translation_language": "翻譯語言",
+        "translation_target_tooltip": "選擇翻譯後的字幕語言",
         "translation_model_mode": "模型模式",
         "translation_model_mode_tooltip": "品質優先使用官方模型，快速模式使用輕量模型",
         "translation_output": "輸出檔案",
@@ -375,7 +376,7 @@ TEXT: dict[str, dict[str, str]] = {
         "log_asr_start": "開始辨識字幕。",
         "log_done": "處理結束。",
         "log_start": "開始處理。",
-        "log_start_with_translation": "開始處理並翻譯。",
+        "log_start_with_translation": "開始辨識並翻譯。",
         "log_translation_start": "開始翻譯字幕。",
         "log_subtitle_done": "字幕生成完成。",
         "log_stop_requested": "已請求停止處理",
@@ -385,10 +386,13 @@ TEXT: dict[str, dict[str, str]] = {
         "log_audio_extract_wav": "[AUDIO] 提取 16k 單聲道 WAV：{name}",
         "log_extract_audio": "正在提取音訊：{percent}%",
         "log_recognize": "正在辨識字幕：{percent}%",
+        "log_recognize_eta": "正在辨識字幕：{percent}%（剩餘 {remaining}）",
         "log_translate": "正在翻譯字幕：{percent}%",
+        "log_translate_eta": "正在翻譯字幕：{percent}%（剩餘 {remaining}）",
         "log_asr_audio_chunks": "[ASR] 音訊時長約 {minutes} 分鐘，分為 {total} 個辨識塊",
         "log_asr_chunk_started": "[ASR] {index}/{total} 開始：{start}-{end} 分鐘",
         "log_asr_chunk_completed": "[ASR] {index}/{total} 完成，用時 {seconds}s，總進度 {percent}%",
+        "log_asr_chunk_completed_eta": "[ASR] {index}/{total} 完成，用時 {seconds}s，總進度 {percent}%，剩餘 {remaining}",
         "log_asr_missing_timestamps": "[ASR] {index}/{total} 無時間戳，使用該辨識塊時間範圍生成粗略字幕",
         "log_asr_empty_text": "[ASR] {index}/{total} 無辨識文本，跳過字幕生成",
         "progress_cached_audio": "使用快取音訊",
@@ -400,7 +404,9 @@ TEXT: dict[str, dict[str, str]] = {
         "progress_translate": "翻譯字幕",
         "progress_extract_audio": "提取音訊 {percent}%",
         "progress_recognize": "辨識字幕 {percent}%",
+        "progress_recognize_eta": "辨識字幕 {percent}%（剩餘 {remaining}）",
         "progress_translate_percent": "翻譯字幕 {percent}%",
+        "progress_translate_percent_eta": "翻譯字幕 {percent}%（剩餘 {remaining}）",
         "progress_model_failed": "模型載入失敗",
         "progress_cancel_remaining": "已取消後續任務",
         "progress_cancelled": "已取消處理",
@@ -410,14 +416,15 @@ TEXT: dict[str, dict[str, str]] = {
     "en": {
         "product_name": "AI Subtitle Assistant",
         "product_subtitle": "ASR powered · Multilingual recognition · Precise time alignment",
-        "ui_language_tooltip": "Switch interface language",
+        "ui_language_label": "UI language",
+        "ui_language_tooltip": "Changes only the app interface text, not recognition or translation languages",
         "add_files": "Add Files",
         "translate_srt": "Translate Existing SRT",
         "translate_srt_tooltip": "Open local SRT translation for subtitle files already generated",
         "start": "Start",
-        "start_tooltip": "Process the queue with current settings; when translation is enabled, also write target-language subtitles",
-        "start_with_translation": "Start + Translate",
-        "start_with_translation_tooltip": "Write original subtitles, then continue with target-language subtitles",
+        "start_tooltip": "Process the queue with current settings; when translation is enabled, also write translated subtitles",
+        "start_with_translation": "Recognize + Translate",
+        "start_with_translation_tooltip": "Recognize original subtitles, then write translated subtitles",
         "stop": "Stop",
         "open_output_folder": "Open Subtitle Folder",
         "clear_queue": "Clear Queue",
@@ -433,15 +440,12 @@ TEXT: dict[str, dict[str, str]] = {
         "settings_title": "Common Settings",
         "advanced_settings": "Advanced Settings",
         "advanced_tooltip": "Device, audio chunking, and other low-frequency options",
-        "context_label": "Context",
-        "context_placeholder": "Optional: title, character names, people, places; leave blank if unsure",
-        "context_tooltip": "Add names or terms to help recognition; leave blank if unsure",
-        "recognition_language": "Language",
-        "recognition_language_tooltip": "Keep Auto by default; choose a language when you know it",
+        "recognition_language": "Subtitle source language",
+        "recognition_language_tooltip": "Language spoken in the video or audio; keep Auto by default",
         "enable_translation_label": "Enable translation?",
         "enable_translation": "Enable",
-        "enable_translation_tooltip": "Write original subtitles first, then output target-language subtitles",
-        "output_language_tooltip": "Target subtitle language used when translation is enabled",
+        "enable_translation_tooltip": "Write original subtitles first, then output translated subtitles",
+        "output_language_tooltip": "Subtitle language used when translation is enabled",
         "profile_label": "Mode",
         "profile_tooltip": "Recommended fits most cases; low VRAM uses safer settings",
         "model_size": "Model Size",
@@ -516,8 +520,8 @@ TEXT: dict[str, dict[str, str]] = {
         "translation_source_placeholder": "Choose the .srt file to translate",
         "translation_browse": "Choose SRT",
         "translation_browse_tooltip": "Choose an existing SRT subtitle file",
-        "translation_target": "Target language",
-        "translation_target_tooltip": "Choose a common language, or type another target language",
+        "translation_language": "Translation language",
+        "translation_target_tooltip": "Choose the subtitle language after translation",
         "translation_model_mode": "Model mode",
         "translation_model_mode_tooltip": "Quality uses the official model; fast uses the lightweight model",
         "translation_output": "Output file",
@@ -573,7 +577,7 @@ TEXT: dict[str, dict[str, str]] = {
         "log_asr_start": "Starting subtitle recognition.",
         "log_done": "Processing finished.",
         "log_start": "Processing started.",
-        "log_start_with_translation": "Processing and translation started.",
+        "log_start_with_translation": "Recognition and translation started.",
         "log_translation_start": "Translation started.",
         "log_subtitle_done": "Subtitle generated.",
         "log_stop_requested": "Stop requested",
@@ -583,10 +587,13 @@ TEXT: dict[str, dict[str, str]] = {
         "log_audio_extract_wav": "[AUDIO] Extracting 16k mono WAV: {name}",
         "log_extract_audio": "Extracting audio: {percent}%",
         "log_recognize": "Recognizing subtitles: {percent}%",
+        "log_recognize_eta": "Recognizing subtitles: {percent}% ({remaining} remaining)",
         "log_translate": "Translating subtitles: {percent}%",
+        "log_translate_eta": "Translating subtitles: {percent}% ({remaining} remaining)",
         "log_asr_audio_chunks": "[ASR] Audio duration about {minutes} min; split into {total} recognition chunks",
         "log_asr_chunk_started": "[ASR] {index}/{total} started: {start}-{end} min",
         "log_asr_chunk_completed": "[ASR] {index}/{total} completed in {seconds}s; overall progress {percent}%",
+        "log_asr_chunk_completed_eta": "[ASR] {index}/{total} completed in {seconds}s; overall progress {percent}%; {remaining} remaining",
         "log_asr_missing_timestamps": "[ASR] {index}/{total} has no timestamps; using the chunk time range for rough subtitles",
         "log_asr_empty_text": "[ASR] {index}/{total} has no recognized text; skipping subtitle generation",
         "progress_cached_audio": "Using cached audio",
@@ -598,7 +605,9 @@ TEXT: dict[str, dict[str, str]] = {
         "progress_translate": "Translating subtitles",
         "progress_extract_audio": "Extracting audio {percent}%",
         "progress_recognize": "Recognizing subtitles {percent}%",
+        "progress_recognize_eta": "Recognizing subtitles {percent}% ({remaining} remaining)",
         "progress_translate_percent": "Translating subtitles {percent}%",
+        "progress_translate_percent_eta": "Translating subtitles {percent}% ({remaining} remaining)",
         "progress_model_failed": "Model load failed",
         "progress_cancel_remaining": "Cancelled remaining tasks",
         "progress_cancelled": "Processing cancelled",
@@ -609,11 +618,12 @@ TEXT: dict[str, dict[str, str]] = {
 
 AUDIO_PROGRESS_RE = re.compile(r"^\[AUDIO\]\s+(\d+)%")
 ASR_PROGRESS_RE = re.compile(r"总进度\s+(\d+)%")
+REMAINING_TIME_RE = re.compile(r"剩余\s+(\d+:\d{2})")
 MODEL_DOWNLOAD_INFO_RE = re.compile(r"^\[INFO\]\s*正在准备模型；首次运行会下载模型，耗时取决于网络和硬盘。$")
 AUDIO_EXTRACT_WAV_RE = re.compile(r"^\[AUDIO\]\s*提取 16k 单声道 WAV:\s*(.+)$")
 ASR_AUDIO_CHUNKS_RE = re.compile(r"^\[ASR\]\s*音频时长约\s*([0-9.]+)\s*分钟，分为\s*(\d+)\s*个识别块")
 ASR_CHUNK_STARTED_RE = re.compile(r"^\[ASR\]\s*(\d+)/(\d+)\s*开始\s*([0-9.]+)-([0-9.]+)\s*分钟")
-ASR_CHUNK_COMPLETED_RE = re.compile(r"^\[ASR\]\s*(\d+)/(\d+)\s*完成，用时\s*([0-9.]+)s，总进度\s*(\d+)%")
+ASR_CHUNK_COMPLETED_RE = re.compile(r"^\[ASR\]\s*(\d+)/(\d+)\s*完成，用时\s*([0-9.]+)s，总进度\s*(\d+)%(?:[，,]\s*剩余\s*(\d+:\d{2}))?")
 ASR_MISSING_TIMESTAMPS_RE = re.compile(r"^\[ASR\]\s*(\d+)/(\d+)\s*无时间戳，使用该识别块时间范围生成粗略字幕")
 ASR_EMPTY_TEXT_RE = re.compile(r"^\[ASR\]\s*(\d+)/(\d+)\s*无识别文本，跳过字幕生成")
 ERROR_DETAIL_TEXT = {
@@ -750,7 +760,7 @@ def user_log_text(message: str, language: str) -> str | None:
     if message.startswith("[START]"):
         if "翻译字幕" in message or "翻譯字幕" in message:
             return tr(language, "log_translation_start")
-        if "含翻译" in message or "含翻譯" in message:
+        if "含翻译" in message or "含翻譯" in message or "识别并翻译" in message or "辨識並翻譯" in message:
             return tr(language, "log_start_with_translation")
         return tr(language, "log_start")
     if message.startswith("[CANCEL]"):
@@ -765,10 +775,16 @@ def user_log_text(message: str, language: str) -> str | None:
     if message.startswith("[TRANSLATE]"):
         translate_match = ASR_PROGRESS_RE.search(message)
         if translate_match:
+            remaining_match = REMAINING_TIME_RE.search(message)
+            if remaining_match:
+                return tr(language, "log_translate_eta", percent=translate_match.group(1), remaining=remaining_match.group(1))
             return tr(language, "log_translate", percent=translate_match.group(1))
 
     asr_match = ASR_PROGRESS_RE.search(message)
     if asr_match:
+        remaining_match = REMAINING_TIME_RE.search(message)
+        if remaining_match:
+            return tr(language, "log_recognize_eta", percent=asr_match.group(1), remaining=remaining_match.group(1))
         return tr(language, "log_recognize", percent=asr_match.group(1))
 
     return None
@@ -801,7 +817,17 @@ def _localized_technical_log_detail(message: str, language: str) -> str | None:
 
     chunk_completed_match = ASR_CHUNK_COMPLETED_RE.search(message)
     if chunk_completed_match:
-        index, total, seconds, percent = chunk_completed_match.groups()
+        index, total, seconds, percent, remaining = chunk_completed_match.groups()
+        if remaining:
+            return tr(
+                language,
+                "log_asr_chunk_completed_eta",
+                index=index,
+                total=total,
+                seconds=seconds,
+                percent=percent,
+                remaining=remaining,
+            )
         return tr(
             language,
             "log_asr_chunk_completed",

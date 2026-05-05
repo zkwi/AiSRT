@@ -21,7 +21,7 @@ Keywords: local AI subtitle generator, video to SRT, audio to SRT, multilingual 
 | Local inference | Runs models locally by default. It does not call DashScope APIs or depend on `qwen3-asr-toolkit`. |
 | Batch processing | The GUI supports a multi-file queue; the CLI supports single-file and directory batch processing. |
 | Subtitle post-processing | Deduplicates text, fixes overlapping timestamps, wraps long lines, cleans CJK spacing, and renumbers subtitles. |
-| Local SRT translation | Translates existing SRT files with local HY-MT models, supports multiple target languages, and preserves numbering and timestamps. |
+| Local SRT translation | Translates existing SRT files with local HY-MT models, supports multiple translation languages, and preserves numbering and timestamps. |
 
 > Note: Public project naming uses AISRT. Qwen3-ASR and Qwen3-ForcedAligner appear only as model IDs and technical dependencies.
 
@@ -106,12 +106,14 @@ The GUI is designed for regular users and keeps only common actions on the main 
 
 - Add files: select one or more video/audio files, or drag files into the window.
 - Start processing: generate original ASR subtitles for queued files.
-- Enable translation: when checked, Start writes original ASR subtitles first, then outputs translated subtitles in the target language.
+- Enable translation: when checked, the main button becomes "Recognize + Translate", writes original ASR subtitles first, then outputs subtitles in the translation language.
 - File queue: shows file name, status, progress, and subtitle directory.
-- Common settings: context, recognition language, whether translation is enabled, target language, run mode, and model size.
+- Progress hints: ASR recognition and subtitle translation show estimated remaining time in `minutes:seconds` format.
+- Language settings: UI language changes only app text; subtitle source language controls ASR; translation language controls translated subtitles.
+- Common settings: subtitle source language, whether translation is enabled, translation language, run mode, and model size.
 - Advanced settings: device, audio chunk size, subtitle style, overwrite behavior, and local cache.
 - Run log: friendly messages by default; technical logs can be enabled when needed.
-- Translate existing SRT: choose an existing SRT file and translate it locally into multiple target languages.
+- Translate existing SRT: choose an existing SRT file and translate it locally into multiple translation languages.
 
 Default behavior:
 
@@ -125,8 +127,8 @@ Recommended settings:
 
 | Setting | Default | Recommendation |
 | --- | --- | --- |
-| Recognition language | Auto | Keep auto when unsure; specify the language when known. |
-| Enable translation | Off | Turn it on only when you also need target-language subtitles; original subtitles are kept. |
+| Subtitle source language | Auto | Keep auto when unsure; specify the spoken language in the video or audio when known. |
+| Enable translation | Off | Turn it on only when you also need translated subtitles; original subtitles are kept. |
 | Run mode | Balanced | Switch to low-memory mode when GPU memory is tight. |
 | Model size | 1.7B | Use 1.7B for quality, 0.6B for speed or lower memory use. |
 | Audio chunks | Recommended, 45 seconds | Use conservative, 30 seconds, if recognition is unstable. |
@@ -137,12 +139,12 @@ Recommended settings:
 AISRT does not call third-party translation APIs and does not automatically upload subtitle files. The GUI's "Translate Existing SRT" action opens a local translation dialog:
 
 1. Choose an existing `.srt` file.
-2. Choose a target language from common presets, or type another language.
+2. Choose the translation language from common presets.
 3. Choose quality or fast mode, then start translation.
 
 Only subtitle text is sent to the local HY-MT model; AISRT preserves and merges SRT numbering and timestamps in code. Quality mode uses the official HY-MT 1.8B model by default. Fast mode uses a lightweight quantized model for quick previews. Translation reuses the existing `.venv` PyTorch/CUDA stack, so users do not need to install another Python or CUDA environment.
 
-When "Enable translation" is checked on the main window, AISRT can produce one-step bilingual output from audio or video. For example, when recognition language is English and target language is Simplified Chinese, AISRT writes:
+When "Enable translation" is checked on the main window, AISRT can produce one-step bilingual output from audio or video. For example, when subtitle source language is English and translation language is Simplified Chinese, AISRT writes:
 
 ```text
 movie.srt      # Original English subtitles from ASR
@@ -300,8 +302,8 @@ Download the models into `models/` ahead of time, then use `--local-files-only` 
 
 Try:
 
-- Specify the recognition language.
-- Add titles, names, places, or domain terms in the context field.
+- Specify the subtitle source language.
+- Use CLI `-c, --context` for titles, names, places, or domain terms.
 - Reduce the audio chunk size from 45 seconds to 30 seconds.
 - Use the 1.7B model instead of 0.6B.
 

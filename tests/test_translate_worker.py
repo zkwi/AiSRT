@@ -69,6 +69,8 @@ Again.
     assert progress[0][1] == "正在加载翻译模型"
     assert progress[-1][1] == "翻译完成"
     assert any("[TRANSLATE] 1/2 完成，总进度 50%" in log for log in logs)
+    assert any("剩余" in log for log in logs)
+    assert any("剩余" in detail for _percent, detail in progress)
     assert any(log.startswith("[TRANSLATE OK]") for log in logs)
     captions = parse_srt(output.read_text(encoding="utf-8"))
     assert [caption.text for caption in captions] == ["译文 1", "译文 2", "译文 3"]

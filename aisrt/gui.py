@@ -206,7 +206,7 @@ class MainWindow(QMainWindow):
         self.translation_button.clicked.connect(self.show_translation_dialog)
         self.translation_browse_button.clicked.connect(self.browse_translation_srt)
         self.translation_source_edit.textChanged.connect(self.refresh_translation_output_preview)
-        self.translation_target_combo.currentTextChanged.connect(lambda _text: self.refresh_translation_output_preview())
+        self.translation_target_combo.currentIndexChanged.connect(lambda _index: self.refresh_translation_output_preview())
         self.translation_start_button.clicked.connect(self.start_translation)
         self.translation_stop_button.clicked.connect(self.request_translation_stop)
         self.advanced_button.clicked.connect(self.show_advanced_settings)
@@ -429,7 +429,11 @@ class MainWindow(QMainWindow):
         if detail == "翻译完成":
             return self.t("translation_done")
         if detail.startswith("翻译字幕 "):
-            return self.t("progress_translate_percent", percent=detail.replace("翻译字幕 ", "").rstrip("%"))
+            progress_text = detail.replace("翻译字幕 ", "")
+            percent, separator, remaining = progress_text.partition(" 剩余 ")
+            if separator:
+                return self.t("progress_translate_percent_eta", percent=percent.rstrip("%"), remaining=remaining)
+            return self.t("progress_translate_percent", percent=percent.rstrip("%"))
         return self.display_log_text(detail) or detail
 
     def request_translation_stop(self) -> None:
@@ -542,6 +546,8 @@ class MainWindow(QMainWindow):
         self.ui_language_combo.setMinimumWidth(180)
         self.prepare_combo(self.ui_language_combo, max_visible_items=3)
         self.set_combo_data(self.ui_language_combo, self.ui_language)
+        self.ui_language_label = QLabel("界面语言")
+        self.ui_language_label.setObjectName("HeaderFieldLabel")
 
         self.add_files_button = QPushButton("添加文件")
         self.add_files_button.setProperty("variant", "accent")
@@ -577,6 +583,7 @@ class MainWindow(QMainWindow):
 
         layout.addWidget(self.logo_label)
         layout.addLayout(title_box, 1)
+        layout.addWidget(self.ui_language_label)
         layout.addWidget(self.ui_language_combo)
         layout.addWidget(self.add_files_button)
         layout.addWidget(self.start_button)
@@ -682,16 +689,12 @@ class MainWindow(QMainWindow):
         common = QGridLayout()
         common.setHorizontalSpacing(10)
         common.setVerticalSpacing(8)
-        common.setColumnMinimumWidth(0, 104)
+        common.setColumnMinimumWidth(0, 126)
         common.setColumnMinimumWidth(2, 84)
         common.setColumnMinimumWidth(4, 84)
         common.setColumnStretch(1, 1)
         common.setColumnStretch(3, 1)
         common.setColumnStretch(5, 1)
-
-        self.context_edit = QLineEdit()
-        self.context_edit.setPlaceholderText("可选：片名、角色名、人名、地名；不确定时留空")
-        self.context_edit.setToolTip("提供片名或角色名可帮助模型识别专有名词，不确定时留空")
 
         self.language_combo = QComboBox()
         self.language_combo.setMinimumWidth(140)
@@ -699,13 +702,12 @@ class MainWindow(QMainWindow):
         self.prepare_combo(self.language_combo)
 
         self.output_language_combo = QComboBox()
-        self.output_language_combo.setEditable(True)
         self.output_language_combo.setMinimumWidth(140)
-        self.output_language_combo.setToolTip("启用翻译后生成的目标字幕语言")
+        self.output_language_combo.setToolTip("启用翻译后生成的翻译字幕语言")
         self.prepare_combo(self.output_language_combo)
 
         self.enable_translation_check = QCheckBox("启用翻译")
-        self.enable_translation_check.setToolTip("处理时先生成原始字幕，再输出目标语言字幕")
+        self.enable_translation_check.setToolTip("处理时先生成原始字幕，再输出翻译语言字幕")
 
         self.profile_combo = QComboBox()
         self.profile_combo.setMinimumWidth(180)
@@ -719,25 +721,22 @@ class MainWindow(QMainWindow):
         self.model_size_combo.setToolTip("1.7B 质量更好；0.6B 更省显存、速度更快")
         self.prepare_combo(self.model_size_combo)
 
-        self.context_label = QLabel("上下文")
-        self.recognition_language_label = QLabel("识别语言")
+        self.recognition_language_label = QLabel("识别字幕语言")
         self.enable_translation_label = QLabel("是否启用翻译")
-        self.output_language_label = QLabel("目标语言")
+        self.output_language_label = QLabel("翻译语言")
         self.profile_label = QLabel("运行模式")
         self.model_size_label = QLabel("模型尺寸")
 
-        common.addWidget(self.context_label, 0, 0)
-        common.addWidget(self.context_edit, 0, 1, 1, 5)
-        common.addWidget(self.recognition_language_label, 1, 0)
-        common.addWidget(self.language_combo, 1, 1)
-        common.addWidget(self.profile_label, 1, 2)
-        common.addWidget(self.profile_combo, 1, 3)
-        common.addWidget(self.model_size_label, 1, 4)
-        common.addWidget(self.model_size_combo, 1, 5)
-        common.addWidget(self.enable_translation_label, 2, 0)
-        common.addWidget(self.enable_translation_check, 2, 1)
-        common.addWidget(self.output_language_label, 2, 2)
-        common.addWidget(self.output_language_combo, 2, 3, 1, 3)
+        common.addWidget(self.recognition_language_label, 0, 0)
+        common.addWidget(self.language_combo, 0, 1)
+        common.addWidget(self.profile_label, 0, 2)
+        common.addWidget(self.profile_combo, 0, 3)
+        common.addWidget(self.model_size_label, 0, 4)
+        common.addWidget(self.model_size_combo, 0, 5)
+        common.addWidget(self.enable_translation_label, 1, 0)
+        common.addWidget(self.enable_translation_check, 1, 1)
+        common.addWidget(self.output_language_label, 1, 2)
+        common.addWidget(self.output_language_combo, 1, 3, 1, 3)
         layout.addLayout(common)
 
         self.advanced_dialog = self.build_advanced_settings_dialog()
@@ -781,9 +780,8 @@ class MainWindow(QMainWindow):
         source_row.addWidget(self.translation_source_edit, 1)
         source_row.addWidget(self.translation_browse_button)
 
-        self.translation_target_label = QLabel("目标语言")
+        self.translation_target_label = QLabel("翻译语言")
         self.translation_target_combo = QComboBox()
-        self.translation_target_combo.setEditable(True)
         self.prepare_combo(self.translation_target_combo)
 
         self.translation_model_mode_label = QLabel("模型模式")
@@ -982,6 +980,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(self.t("product_name"))
         self.title_label.setText(self.t("product_name"))
         self.subtitle_label.setText(self.t("product_subtitle"))
+        self.ui_language_label.setText(self.t("ui_language_label"))
         self.ui_language_combo.setToolTip(self.t("ui_language_tooltip"))
         self.add_files_button.setText(self.t("add_files"))
         self.add_files_button.setToolTip(self.t("add_files"))
@@ -1011,15 +1010,12 @@ class MainWindow(QMainWindow):
         self.settings_title_label.setText(self.t("settings_title"))
         self.advanced_button.setText(self.t("advanced_settings"))
         self.advanced_button.setToolTip(self.t("advanced_tooltip"))
-        self.context_label.setText(self.t("context_label"))
-        self.context_edit.setPlaceholderText(self.t("context_placeholder"))
-        self.context_edit.setToolTip(self.t("context_tooltip"))
         self.recognition_language_label.setText(self.t("recognition_language"))
         self.language_combo.setToolTip(self.t("recognition_language_tooltip"))
         self.enable_translation_label.setText(self.t("enable_translation_label"))
         self.enable_translation_check.setText(self.t("enable_translation"))
         self.enable_translation_check.setToolTip(self.t("enable_translation_tooltip"))
-        self.output_language_label.setText(self.t("translation_target"))
+        self.output_language_label.setText(self.t("translation_language"))
         self.output_language_combo.setToolTip(self.t("output_language_tooltip"))
         self.profile_label.setText(self.t("profile_label"))
         self.profile_combo.setToolTip(self.t("profile_tooltip"))
@@ -1047,7 +1043,7 @@ class MainWindow(QMainWindow):
         self.translation_source_edit.setPlaceholderText(self.t("translation_source_placeholder"))
         self.translation_browse_button.setText(self.t("translation_browse"))
         self.translation_browse_button.setToolTip(self.t("translation_browse_tooltip"))
-        self.translation_target_label.setText(self.t("translation_target"))
+        self.translation_target_label.setText(self.t("translation_language"))
         self.translation_target_combo.setToolTip(self.t("translation_target_tooltip"))
         self.translation_model_mode_label.setText(self.t("translation_model_mode"))
         self.translation_model_mode_combo.setToolTip(self.t("translation_model_mode_tooltip"))
@@ -1319,7 +1315,7 @@ class MainWindow(QMainWindow):
             translate_after_asr = self.enable_translation_check.isChecked()
         return GuiOptions(
             out_dir=None,
-            context=self.context_edit.text().strip(),
+            context="",
             language=self.language_combo.currentData() or DEFAULT_LANGUAGE,
             model=resolve_asr_model(self.model_size_combo.currentText()),
             aligner=DEFAULT_ALIGNER,
@@ -1385,7 +1381,7 @@ class MainWindow(QMainWindow):
         self.log_box.clear()
         self.full_log.clear()
         self.clear_log_button.setEnabled(False)
-        self.append_log("[START] 开始处理（含翻译）" if options.translate_after_asr else "[START] 开始处理")
+        self.append_log("[START] 开始识别并翻译" if options.translate_after_asr else "[START] 开始处理")
 
         self.thread = QThread(self)
         self.worker = SubtitleWorker(list(self.files), options)
@@ -1502,9 +1498,17 @@ class MainWindow(QMainWindow):
         if detail.startswith("提取音频 "):
             return self.t("progress_extract_audio", percent=detail.replace("提取音频 ", "").rstrip("%"))
         if detail.startswith("识别字幕 "):
-            return self.t("progress_recognize", percent=detail.replace("识别字幕 ", "").rstrip("%"))
+            progress_text = detail.replace("识别字幕 ", "")
+            percent, separator, remaining = progress_text.partition(" 剩余 ")
+            if separator:
+                return self.t("progress_recognize_eta", percent=percent.rstrip("%"), remaining=remaining)
+            return self.t("progress_recognize", percent=percent.rstrip("%"))
         if detail.startswith("翻译字幕 "):
-            return self.t("progress_translate_percent", percent=detail.replace("翻译字幕 ", "").rstrip("%"))
+            progress_text = detail.replace("翻译字幕 ", "")
+            percent, separator, remaining = progress_text.partition(" 剩余 ")
+            if separator:
+                return self.t("progress_translate_percent_eta", percent=percent.rstrip("%"), remaining=remaining)
+            return self.t("progress_translate_percent", percent=percent.rstrip("%"))
         return detail
 
     def update_progress(self, percent: int, detail: str) -> None:

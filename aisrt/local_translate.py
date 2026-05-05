@@ -4,9 +4,11 @@ from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 import html
 import re
+import time
 from typing import Any
 
 from .errors import ProcessingCancelled
+from .local_asr import estimate_remaining_time
 from .postprocess import Caption, format_srt, parse_srt
 
 
@@ -332,6 +334,7 @@ def translate_srt_text(
     translated_by_id: dict[int, str] = {}
     previous_context: list[tuple[int, str, str]] = []
     chunks = chunk_captions(captions, chunk_size=chunk_size)
+    started_at = time.perf_counter()
 
     for chunk_index, chunk in enumerate(chunks, start=1):
         if should_stop and should_stop():
@@ -348,7 +351,9 @@ def translate_srt_text(
         translated_by_id.update(translated)
         previous_context.extend((caption.index, caption.text, translated[caption.index]) for caption in chunk)
         percent = int(chunk_index / len(chunks) * 100)
-        log(f"[TRANSLATE] {chunk_index}/{len(chunks)} 完成，总进度 {percent}%")
+        elapsed = time.perf_counter() - started_at
+        remaining = estimate_remaining_time(elapsed, chunk_index, len(chunks))
+        log(f"[TRANSLATE] {chunk_index}/{len(chunks)} 完成，总进度 {percent}%，剩余 {remaining}")
 
     translated_captions = [
         Caption(

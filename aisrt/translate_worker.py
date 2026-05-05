@@ -20,6 +20,7 @@ from .user_messages import friendly_error_message
 
 
 TRANSLATE_PROGRESS_RE = re.compile(r"总进度\s+(\d+)%")
+REMAINING_TIME_RE = re.compile(r"剩余\s+(\d+:\d{2})")
 
 
 @dataclass
@@ -81,7 +82,11 @@ class SrtTranslationWorker(QObject):
                 match = TRANSLATE_PROGRESS_RE.search(message)
                 if match:
                     percent = min(100, int(match.group(1)))
-                    self.progress.emit(percent, f"翻译字幕 {percent}%")
+                    remaining_match = REMAINING_TIME_RE.search(message)
+                    detail = f"翻译字幕 {percent}%"
+                    if remaining_match:
+                        detail += f" 剩余 {remaining_match.group(1)}"
+                    self.progress.emit(percent, detail)
 
             translated = translate_srt_text(
                 source,

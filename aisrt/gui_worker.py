@@ -20,6 +20,7 @@ from .user_messages import friendly_error_message
 
 
 TRANSLATE_PROGRESS_RE = re.compile(r"总进度\s+(\d+)%")
+REMAINING_TIME_RE = re.compile(r"剩余\s+(\d+:\d{2})")
 
 
 class SubtitleWorker(QObject):
@@ -151,7 +152,11 @@ class SubtitleWorker(QObject):
                             translate_percent = min(100, int(match.group(1)))
                             file_percent = 90 + round(translate_percent * 0.1)
                             overall = int(((index + file_percent / 100) / total) * 100)
-                            self.progress.emit(overall, f"{media_path.name} - 翻译字幕 {translate_percent}%")
+                            remaining_match = REMAINING_TIME_RE.search(message)
+                            detail = f"{media_path.name} - 翻译字幕 {translate_percent}%"
+                            if remaining_match:
+                                detail += f" 剩余 {remaining_match.group(1)}"
+                            self.progress.emit(overall, detail)
 
                         translated = translate_srt_text(
                             final_srt.read_text(encoding="utf-8-sig"),

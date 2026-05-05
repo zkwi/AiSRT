@@ -9,6 +9,7 @@ from .cli import MEDIA_EXTENSIONS, output_target_paths
 
 AUDIO_PROGRESS_RE = re.compile(r"^\[AUDIO\]\s+(\d+)%")
 ASR_PROGRESS_RE = re.compile(r"总进度\s+(\d+)%")
+REMAINING_TIME_RE = re.compile(r"剩余\s+(\d+:\d{2})")
 
 
 @dataclass
@@ -87,6 +88,10 @@ def file_progress_from_log_message(message: str) -> tuple[int, str] | None:
     asr_match = ASR_PROGRESS_RE.search(message)
     if asr_match:
         percent = min(100, int(asr_match.group(1)))
-        return 10 + round(percent * 0.9), f"识别字幕 {percent}%"
+        remaining_match = REMAINING_TIME_RE.search(message)
+        detail = f"识别字幕 {percent}%"
+        if remaining_match:
+            detail += f" 剩余 {remaining_match.group(1)}"
+        return 10 + round(percent * 0.9), detail
 
     return None
